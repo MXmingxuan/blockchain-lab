@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}区块链密码学工具{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="/" class="logo">🔗 BlockchainLab</a>
+            <ul class="nav-links">
+                <li class="nav-dropdown">
+                    <span style="color: var(--accent-blue); cursor: pointer;">第三章 ▼</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/avalanche">🌀 雪崩效应</a></li>
+                        <li><a href="/blockchain">⛓️ 区块链</a></li>
+                        <li><a href="/merkle">🌲 默克尔树</a></li>
+                        <li><a href="/signature">✍️ 数字签名</a></li>
+                        <li><a href="/address">📍 比特币地址</a></li>
+                    </ul>
+                </li>
+                <li class="nav-dropdown">
+                    <span style="color: var(--accent-purple); cursor: pointer;">第四章 ▼</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/pow">⛏️ PoW挖矿</a></li>
+                        <li><a href="/mining">💰 盈亏计算</a></li>
+                        <li><a href="/difficulty">📊 难度预测</a></li>
+                        <li><a href="/forks">🔀 分叉监控</a></li>
+                        <li><a href="/inflation">📉 通胀率</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <style>
+        .nav-dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.5rem 0;
+            min-width: 160px;
+            z-index: 1000;
+            list-style: none;
+        }
+
+        .nav-dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-menu li a {
+            display: block;
+            padding: 0.5rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .dropdown-menu li a:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+    </style>
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

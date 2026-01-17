@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">区块链密码学工具</h1>
+    <p class="page-subtitle">MIT 区块链课程 - 动手学习密码学原语与共识机制</p>
+</div>
+
+<!-- 第三章：密码学原语 -->
+<h2 style="color: var(--accent-blue); margin-bottom: 1.5rem;">📚 第三章：密码学原语</h2>
+<div class="card-grid" style="margin-bottom: 3rem;">
+    <a href="/avalanche" class="tool-card">
+        <div class="tool-icon hash">🌀</div>
+        <h3 class="tool-title">雪崩效应演示器</h3>
+        <p class="tool-desc">输入微小变化 → 哈希巨变。可视化 SHA-256 的位翻转效果。</p>
+    </a>
+
+    <a href="/blockchain" class="tool-card">
+        <div class="tool-icon chain">⛓️</div>
+        <h3 class="tool-title">迷你区块链构建器</h3>
+        <p class="tool-desc">创建区块链、添加区块、篡改检测。理解哈希指针的链接机制。</p>
+    </a>
+
+    <a href="/merkle" class="tool-card">
+        <div class="tool-icon tree">🌲</div>
+        <h3 class="tool-title">默克尔树计算器</h3>
+        <p class="tool-desc">将多笔交易压缩为单一根哈希。可视化二叉树构建过程。</p>
+    </a>
+
+    <a href="/signature" class="tool-card">
+        <div class="tool-icon sign">✍️</div>
+        <h3 class="tool-title">数字签名模拟器</h3>
+        <p class="tool-desc">ECDSA 密钥生成、签名、验证。演示非对称加密的魔力。</p>
+    </a>
+
+    <a href="/address" class="tool-card">
+        <div class="tool-icon address">📍</div>
+        <h3 class="tool-title">比特币地址生成器</h3>
+        <p class="tool-desc">完整还原地址派生流程：私钥 → 公钥 → 哈希 → Base58。</p>
+    </a>
+</div>
+
+<!-- 第四章：共识与挖矿 -->
+<h2 style="color: var(--accent-purple); margin-bottom: 1.5rem;">⛏️ 第四章：共识与挖矿</h2>
+<div class="card-grid">
+    <a href="/pow" class="tool-card">
+        <div class="tool-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">⛏️</div>
+        <h3 class="tool-title">PoW 挖矿模拟器</h3>
+        <p class="tool-desc">寻找满足难度的 Nonce。体验挖矿的核心原理和难度增长。</p>
+    </a>
+
+    <a href="/mining" class="tool-card">
+        <div class="tool-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">💰</div>
+        <h3 class="tool-title">挖矿盈亏计算器</h3>
+        <p class="tool-desc">计算关机币价和每日利润。分析矿机经济学。</p>
+    </a>
+
+    <a href="/difficulty" class="tool-card">
+        <div class="tool-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">📊</div>
+        <h3 class="tool-title">难度调整预测器</h3>
+        <p class="tool-desc">预测下次难度调整幅度。每2016个区块调整一次。</p>
+    </a>
+
+    <a href="/forks" class="tool-card">
+        <div class="tool-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">🔀</div>
+        <h3 class="tool-title">分叉/孤块监控器</h3>
+        <p class="tool-desc">理解确认数安全性。为什么交易所要求6个确认？</p>
+    </a>
+
+    <a href="/inflation" class="tool-card">
+        <div class="tool-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">📉</div>
+        <h3 class="tool-title">通胀率仪表盘</h3>
+        <p class="tool-desc">比特币供应量可视化。减半倒计时和通胀对比。</p>
+    </a>
+</div>
+
+<div style="margin-top: 3rem; text-align: center; color: var(--text-muted);">
+    <p>基于 MIT 15.S12 Blockchain and Money 课程内容</p>
+    <p style="margin-top: 0.5rem;">Gary Gensler 教授 | 2018</p>
+</div>
+{% endblock %}

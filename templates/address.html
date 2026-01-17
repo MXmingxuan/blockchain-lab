@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}比特币地址生成器 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">📍 比特币地址生成器</h1>
+    <p class="page-subtitle">完整还原中本聪的设计 - 从私钥到地址的7步流程</p>
+</div>
+
+<div class="panel" style="max-width: 800px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <button class="btn btn-primary" onclick="generateAddress()" style="font-size: 1.2rem; padding: 1rem 2rem;">
+            🎲 生成新的比特币地址
+        </button>
+    </div>
+
+    <div id="result" style="display: none;">
+        <div class="result-box" style="text-align: center; margin-bottom: 2rem; padding: 1.5rem;">
+            <div class="result-label" style="font-size: 1rem;">最终比特币地址</div>
+            <div class="result-value" id="finalAddress" style="font-size: 1.3rem; margin-top: 0.5rem;"></div>
+        </div>
+
+        <h3 class="panel-title">📋 生成步骤详解</h3>
+
+        <div id="steps" class="address-steps"></div>
+    </div>
+
+    <div id="placeholder" class="message info">
+        💡 点击上方按钮生成一个真实的比特币地址，并查看每一步的中间结果
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function generateAddress() {
+        const response = await fetch('/api/address/generate');
+        const data = await response.json();
+
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        // 显示最终地址
+        document.getElementById('finalAddress').textContent = data.address;
+
+        // 渲染步骤
+        const stepsContainer = document.getElementById('steps');
+        let html = '';
+
+        data.steps.forEach(step => {
+            const isLast = step.step === 7;
+            html += `
+            <div class="address-step fade-in" ${isLast ? 'style="border-left-color: var(--accent-green);"' : ''}>
+                <div class="step-name">步骤 ${step.step}: ${step.name}</div>
+                <div class="step-desc">${step.description}</div>
+                <div class="step-output">${step.output.length > 80 ? step.output.substring(0, 80) + '...' : step.output}</div>
+            </div>`;
+        });
+
+        stepsContainer.innerHTML = html;
+
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('placeholder').style.display = 'none';
+    }
+</script>
+{% endblock %}

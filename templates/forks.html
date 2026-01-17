@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}分叉监控器 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🔀 分叉/孤块监控器</h1>
+    <p class="page-subtitle">理解确认数的安全性 - 为什么交易所要求6个确认？</p>
+</div>
+
+<div class="tool-layout">
+    <div class="panel">
+        <h2 class="panel-title">🔒 确认数安全等级</h2>
+
+        <div class="input-group">
+            <label class="input-label">输入确认数</label>
+            <input type="number" id="confirmations" class="input-field" value="6" min="0" max="100">
+        </div>
+
+        <button class="btn btn-primary" onclick="checkSafety()" style="width: 100%;">
+            🔍 查看安全等级
+        </button>
+
+        <div id="safetyResult" style="margin-top: 1.5rem;"></div>
+
+        <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+
+        <h3 class="panel-title" style="margin-top: 0;">📊 快速对比</h3>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn btn-secondary" onclick="checkQuick(0)">0确认</button>
+            <button class="btn btn-secondary" onclick="checkQuick(1)">1确认</button>
+            <button class="btn btn-secondary" onclick="checkQuick(3)">3确认</button>
+            <button class="btn btn-secondary" onclick="checkQuick(6)">6确认</button>
+            <button class="btn btn-secondary" onclick="checkQuick(12)">12确认</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">📚 为什么要6个确认？</h2>
+
+        <div id="explanation"></div>
+
+        <div class="result-box" style="margin-top: 1.5rem;">
+            <div class="result-label">攻击成本估算（重写6个区块）</div>
+            <div id="attackCost" style="margin-top: 0.5rem;"></div>
+        </div>
+
+        <div class="message info" style="margin-top: 1rem;">
+            <strong>分叉示意图：</strong>
+            <pre style="font-size: 0.75rem; margin-top: 0.5rem; color: var(--text-secondary);">
+主链: [N] → [N+1] → [N+2] → [N+3] → ...
+                ↓
+           [孤块] ← 被抛弃的分叉
+            </pre>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function checkSafety() {
+        const confirmations = parseInt(document.getElementById('confirmations').value);
+
+        const response = await fetch('/api/forks/safety?confirmations=' + confirmations);
+        const data = await response.json();
+
+        document.getElementById('safetyResult').innerHTML = `
+        <div class="result-box">
+            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">${data.security_level}</div>
+            <div style="color: var(--text-secondary);">${data.description}</div>
+            <div style="margin-top: 1rem;">
+                <div>推荐用于: <strong>${data.recommended_for}</strong></div>
+                <div>重组概率: <span style="color: var(--accent-orange);">${data.reorg_probability}</span></div>
+                <div>等待时间: ~${data.wait_time_minutes} 分钟</div>
+            </div>
+        </div>`;
+    }
+
+    function checkQuick(conf) {
+        document.getElementById('confirmations').value = conf;
+        checkSafety();
+    }
+
+    async function loadExplanation() {
+        const response = await fetch('/api/forks/explain');
+        const data = await response.json();
+
+        let html = '<div style="display: flex; flex-direction: column; gap: 1rem;">';
+        data.explanation.forEach((item, index) => {
+            html += `
+            <div class="flow-step">
+                <div class="step-number">${index + 1}</div>
+                <div class="step-content">
+                    <div class="step-title">${item.point}</div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">${item.detail}</div>
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+
+        document.getElementById('explanation').innerHTML = html;
+
+        const cost = data.attack_cost;
+        document.getElementById('attackCost').innerHTML = `
+        <div>所需算力: ${cost.required_hashrate}</div>
+        <div>所需功率: ${cost.required_power}</div>
+        <div>电力成本: ${cost.electricity_cost}</div>
+        <div>机会成本: ${cost.opportunity_cost}</div>
+        <div style="margin-top: 0.5rem; color: var(--accent-red); font-weight: bold;">
+            最低总成本: ${cost.total_minimum_cost}
+        </div>`;
+    }
+
+    // 页面加载时获取解释
+    loadExplanation();
+    checkSafety();
+</script>
+{% endblock %}

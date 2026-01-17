@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}数字签名模拟器 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">✍️ 数字签名模拟器</h1>
+    <p class="page-subtitle">ECDSA 非对称加密 - 在不泄露私钥的情况下证明身份</p>
+</div>
+
+<div class="tool-layout">
+    <div class="panel">
+        <h2 class="panel-title">🔑 密钥管理</h2>
+
+        <button class="btn btn-primary" onclick="generateKeys()" style="width: 100%;">
+            🎲 生成新密钥对
+        </button>
+
+        <div class="result-box" style="margin-top: 1rem;">
+            <div class="result-label">私钥 (Private Key) - 保密！</div>
+            <div class="result-value" id="privateKey" style="color: var(--accent-red);">尚未生成</div>
+        </div>
+
+        <div class="result-box">
+            <div class="result-label">公钥 (Public Key) - 可公开</div>
+            <div class="result-value" id="publicKey">尚未生成</div>
+        </div>
+
+        <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+
+        <h3 class="panel-title" style="margin-top: 0;">📝 签名消息</h3>
+
+        <div class="input-group">
+            <label class="input-label">要签名的消息</label>
+            <input type="text" id="message" class="input-field" value="Alice pays Bob 1 BTC" placeholder="输入消息">
+        </div>
+
+        <button class="btn btn-success" onclick="signMessage()">
+            ✍️ 签名
+        </button>
+
+        <div class="result-box" style="margin-top: 1rem;">
+            <div class="result-label">签名 (Signature)</div>
+            <div class="result-value" id="signature">尚未签名</div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">✅ 验证签名</h2>
+
+        <div class="input-group">
+            <label class="input-label">验证消息</label>
+            <input type="text" id="verifyMessage" class="input-field" placeholder="输入要验证的消息">
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">验证用公钥</label>
+            <input type="text" id="verifyPublicKey" class="input-field" placeholder="输入公钥">
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="verifyCorrect()">
+                ✅ 正确公钥验证
+            </button>
+            <button class="btn btn-danger" onclick="verifyWrong()">
+                ❌ 错误公钥验证
+            </button>
+        </div>
+
+        <div id="verifyResult" style="margin-top: 1.5rem;"></div>
+
+        <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+
+        <h3 class="panel-title" style="margin-top: 0;">🧪 攻击测试</h3>
+
+        <div class="input-group">
+            <label class="input-label">篡改消息</label>
+            <input type="text" id="tamperedMessage" class="input-field" value="Alice pays Bob 100 BTC"
+                placeholder="尝试篡改消息">
+        </div>
+
+        <button class="btn btn-danger" onclick="verifyTampered()">
+            💀 验证篡改消息
+        </button>
+
+        <div id="tamperedResult" style="margin-top: 1rem;"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentKeys = { private_key: '', public_key: '' };
+    let currentSignature = '';
+
+    async function generateKeys() {
+        const response = await fetch('/api/signature/generate');
+        const data = await response.json();
+
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        currentKeys = data;
+        document.getElementById('privateKey').textContent = data.private_key.substring(0, 32) + '...';
+        document.getElementById('publicKey').textContent = data.public_key.substring(0, 32) + '...';
+        document.getElementById('verifyPublicKey').value = data.public_key;
+    }
+
+    async function signMessage() {
+        if (!currentKeys.private_key) {
+            alert('请先生成密钥对');
+            return;
+        }
+
+        const message = document.getElementById('message').value;
+
+        const response = await fetch('/api/signature/sign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: message,
+                private_key: currentKeys.private_key
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        currentSignature = data.signature;
+        document.getElementById('signature').textContent = data.signature.substring(0, 32) + '...';
+        document.getElementById('verifyMessage').value = message;
+    }
+
+    async function verifySignature(message, publicKey, resultDivId) {
+        if (!currentSignature) {
+            alert('请先签名消息');
+            return;
+        }
+
+        const response = await fetch('/api/signature/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: message,
+                signature: currentSignature,
+                public_key: publicKey
+            })
+        });
+
+        const data = await response.json();
+        const resultDiv = document.getElementById(resultDivId);
+
+        if (data.valid) {
+            resultDiv.innerHTML = `
+            <div class="validation-status valid">
+                ✅ 验证通过！签名有效
+            </div>`;
+        } else {
+            resultDiv.innerHTML = `
+            <div class="validation-status invalid">
+                ❌ 验证失败！${data.reason || '签名无效'}
+            </div>`;
+        }
+    }
+
+    function verifyCorrect() {
+        const message = document.getElementById('verifyMessage').value;
+        verifySignature(message, currentKeys.public_key, 'verifyResult');
+    }
+
+    async function verifyWrong() {
+        // 生成一个新的密钥对作为"错误的"公钥
+        const response = await fetch('/api/signature/generate');
+        const wrongKeys = await response.json();
+
+        const message = document.getElementById('verifyMessage').value;
+        verifySignature(message, wrongKeys.public_key, 'verifyResult');
+    }
+
+    function verifyTampered() {
+        const message = document.getElementById('tamperedMessage').value;
+        verifySignature(message, currentKeys.public_key, 'tamperedResult');
+    }
+</script>
+{% endblock %}

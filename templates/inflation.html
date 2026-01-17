@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}通胀率仪表盘 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">📉 通胀率仪表盘</h1>
+    <p class="page-subtitle">比特币供应量与减半倒计时 - 硬编码的货币政策</p>
+</div>
+
+<div class="panel" style="max-width: 1000px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <button class="btn btn-primary" onclick="loadStats()" style="font-size: 1.1rem; padding: 1rem 2rem;">
+            🔄 获取最新数据
+        </button>
+    </div>
+
+    <div id="results" style="display: none;">
+        <!-- 供应量概览 -->
+        <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="stat-item">
+                <div class="stat-value" id="circulating">-</div>
+                <div class="stat-label">流通量 (BTC)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="remaining">-</div>
+                <div class="stat-label">剩余待挖</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="inflation">-</div>
+                <div class="stat-label">年化通胀率</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="blockReward">-</div>
+                <div class="stat-label">当前区块奖励</div>
+            </div>
+        </div>
+
+        <!-- 供应进度条 -->
+        <div style="margin-top: 2rem;">
+            <h3 class="panel-title">📊 供应进度 (总量: 21,000,000 BTC)</h3>
+            <div style="background: var(--bg-secondary); border-radius: 8px; padding: 1rem;">
+                <div style="background: var(--bg-primary); border-radius: 4px; height: 32px; overflow: hidden;">
+                    <div id="supplyBar" style="background: var(--gradient-2); height: 100%; transition: width 0.5s;">
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 0.5rem;">
+                    已挖出 <span id="supplyPercent" style="color: var(--accent-green); font-weight: bold;">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 减半倒计时 -->
+        <div
+            style="margin-top: 2rem; background: var(--bg-secondary); border-radius: 12px; padding: 1.5rem; text-align: center;">
+            <h3 style="color: var(--accent-purple); margin-bottom: 1rem;">⏰ 下次减半倒计时</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                <div>
+                    <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-blue);" id="blocksRemaining">-
+                    </div>
+                    <div style="color: var(--text-muted);">剩余区块</div>
+                </div>
+                <div>
+                    <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-purple);" id="daysRemaining">-
+                    </div>
+                    <div style="color: var(--text-muted);">预计天数</div>
+                </div>
+                <div>
+                    <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-green);" id="halvingDate">-
+                    </div>
+                    <div style="color: var(--text-muted);">预计日期</div>
+                </div>
+            </div>
+            <div style="margin-top: 1rem; color: var(--text-secondary);">
+                减半后奖励: <span id="postHalvingReward" style="color: var(--accent-orange);">-</span> BTC/块
+            </div>
+        </div>
+
+        <!-- 通胀对比 -->
+        <div style="margin-top: 2rem;">
+            <h3 class="panel-title">📈 通胀率对比</h3>
+            <div id="inflationComparison" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+            </div>
+        </div>
+
+        <!-- 里程碑 -->
+        <div style="margin-top: 2rem;">
+            <h3 class="panel-title">🏆 供应里程碑</h3>
+            <div id="milestones" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
+        </div>
+    </div>
+
+    <div id="placeholder" class="message info">
+        👆 点击按钮获取最新的供应量数据
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadStats() {
+        const response = await fetch('/api/inflation/stats');
+        const data = await response.json();
+
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('placeholder').style.display = 'none';
+
+        // 基本数据
+        document.getElementById('circulating').textContent = (data.supply.circulating / 1e6).toFixed(2) + 'M';
+        document.getElementById('remaining').textContent = (data.supply.remaining / 1e6).toFixed(2) + 'M';
+        document.getElementById('inflation').textContent = data.inflation.annual_rate + '%';
+        document.getElementById('blockReward').textContent = data.reward.current + ' BTC';
+
+        // 供应进度
+        document.getElementById('supplyBar').style.width = data.supply.progress_percent + '%';
+        document.getElementById('supplyPercent').textContent = data.supply.progress_percent + '%';
+
+        // 减半倒计时
+        document.getElementById('blocksRemaining').textContent = data.halving.blocks_remaining.toLocaleString();
+        document.getElementById('daysRemaining').textContent = Math.round(data.halving.days_remaining);
+        document.getElementById('halvingDate').textContent = data.halving.estimated_date;
+        document.getElementById('postHalvingReward').textContent = data.halving.post_halving_reward;
+
+        // 通胀对比
+        let compHtml = '';
+        data.inflation.comparison.forEach(item => {
+            const color = item.asset === '比特币' ? 'var(--accent-orange)' : 'var(--text-secondary)';
+            compHtml += `
+            <div class="result-box" style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: ${color};">${item.rate}%</div>
+                <div style="color: var(--text-muted); font-size: 0.85rem;">${item.asset}</div>
+            </div>`;
+        });
+        document.getElementById('inflationComparison').innerHTML = compHtml;
+
+        // 里程碑
+        let mileHtml = '';
+        data.milestones.forEach(m => {
+            const style = m.reached
+                ? 'background: rgba(16, 185, 129, 0.2); border-color: var(--accent-green);'
+                : 'background: var(--bg-secondary);';
+            mileHtml += `
+            <div style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); ${style}">
+                ${m.status} ${m.label}
+            </div>`;
+        });
+        document.getElementById('milestones').innerHTML = mileHtml;
+    }
+</script>
+{% endblock %}

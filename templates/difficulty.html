@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}难度调整预测 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">📊 难度调整预测器</h1>
+    <p class="page-subtitle">预测下次比特币难度调整 - 每2016个区块调整一次</p>
+</div>
+
+<div class="panel" style="max-width: 900px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <button class="btn btn-primary" onclick="loadPrediction()" style="font-size: 1.1rem; padding: 1rem 2rem;">
+            🔄 获取最新预测
+        </button>
+    </div>
+
+    <div id="results" style="display: none;">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="currentDiff">-</div>
+                <div class="stat-label">当前难度</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="adjustment">-</div>
+                <div class="stat-label">预计调整</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="timeLeft">-</div>
+                <div class="stat-label">距离调整</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <h3 class="panel-title">📈 周期进度</h3>
+            <div style="background: var(--bg-secondary); border-radius: 8px; padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>周期起始: 区块 <span id="epochStart">-</span></span>
+                    <span>已完成: <span id="blocksCompleted">-</span> / 2016</span>
+                </div>
+                <div style="background: var(--bg-primary); border-radius: 4px; height: 24px; overflow: hidden;">
+                    <div id="progressBar" style="background: var(--gradient-1); height: 100%; transition: width 0.5s;">
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 0.5rem; color: var(--text-secondary);">
+                    <span id="progressPercent">0</span>%
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem;">
+            <div class="result-box">
+                <div class="result-label">出块时间分析</div>
+                <div style="margin-top: 0.5rem;">
+                    <div>目标时间: <span style="color: var(--accent-blue);">600 秒</span></div>
+                    <div>平均时间: <span id="avgBlockTime" style="color: var(--accent-green);">-</span></div>
+                    <div>偏差: <span id="timeDeviation">-</span></div>
+                </div>
+            </div>
+
+            <div class="result-box">
+                <div class="result-label">预测解读</div>
+                <div id="interpretation" style="margin-top: 0.5rem; color: var(--text-secondary);"></div>
+            </div>
+        </div>
+
+        <div class="message info" style="margin-top: 1.5rem;">
+            💡 <strong>难度调整机制：</strong>比特币每2016个区块（约2周）调整一次难度，确保平均出块时间维持在10分钟。
+            如果算力增加导致出块变快，难度就会上调；反之下调。
+        </div>
+    </div>
+
+    <div id="placeholder" class="message info">
+        👆 点击按钮获取最新的难度调整预测
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadPrediction() {
+        const response = await fetch('/api/difficulty/predict');
+        const data = await response.json();
+
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('placeholder').style.display = 'none';
+
+        document.getElementById('currentDiff').textContent = data.current.difficulty_human;
+
+        const adj = data.prediction.adjustment_percent;
+        const adjText = (adj >= 0 ? '+' : '') + adj.toFixed(2) + '%';
+        document.getElementById('adjustment').textContent = adjText;
+        document.getElementById('adjustment').style.color = adj >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+
+        document.getElementById('timeLeft').textContent = data.prediction.time_until_adjustment;
+
+        document.getElementById('epochStart').textContent = data.epoch.start_block.toLocaleString();
+        document.getElementById('blocksCompleted').textContent = data.epoch.blocks_completed;
+        document.getElementById('progressBar').style.width = data.epoch.progress_percent + '%';
+        document.getElementById('progressPercent').textContent = data.epoch.progress_percent;
+
+        document.getElementById('avgBlockTime').textContent = data.prediction.avg_block_time + ' 秒';
+
+        const deviation = ((data.prediction.avg_block_time - 600) / 600 * 100).toFixed(1);
+        document.getElementById('timeDeviation').textContent = deviation + '%';
+        document.getElementById('timeDeviation').style.color = Math.abs(deviation) < 5 ? 'var(--accent-green)' : 'var(--accent-orange)';
+
+        document.getElementById('interpretation').textContent = data.interpretation;
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}雪崩效应演示器 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🌀 雪崩效应演示器</h1>
+    <p class="page-subtitle">输入微小变化导致哈希输出巨大差异 - SHA-256 的核心特性</p>
+</div>
+
+<div class="tool-layout">
+    <div class="panel">
+        <h2 class="panel-title">📝 输入</h2>
+
+        <div class="input-group">
+            <label class="input-label">字符串 A</label>
+            <input type="text" id="stringA" class="input-field" value="Hello World" placeholder="输入第一个字符串">
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">字符串 B</label>
+            <input type="text" id="stringB" class="input-field" value="Hello world" placeholder="输入第二个字符串（尝试只改一个字符）">
+        </div>
+
+        <button class="btn btn-primary" onclick="compareHashes()">
+            🔍 对比哈希
+        </button>
+
+        <div class="message info" style="margin-top: 1.5rem;">
+            💡 提示：尝试只改变一个字符（如大小写），观察哈希值的变化
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">📊 分析结果</h2>
+
+        <div id="results" style="display: none;">
+            <div class="hash-compare">
+                <div class="hash-row">
+                    <span class="hash-label">哈希 A:</span>
+                    <span class="hash-value" id="hashA"></span>
+                </div>
+                <div class="hash-row">
+                    <span class="hash-label">哈希 B:</span>
+                    <span class="hash-value" id="hashB"></span>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="flippedBits">0</div>
+                    <div class="stat-label">翻转位数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">256</div>
+                    <div class="stat-label">总位数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="flipPercent">0%</div>
+                    <div class="stat-label">翻转比例</div>
+                </div>
+            </div>
+
+            <div class="result-box" style="margin-top: 1.5rem;">
+                <div class="result-label">位差异可视化（红色=不同）</div>
+                <div class="bit-visual" id="bitVisual"></div>
+            </div>
+        </div>
+
+        <div id="placeholder" class="message info">
+            👆 输入两个字符串并点击对比按钮查看结果
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function compareHashes() {
+        const stringA = document.getElementById('stringA').value;
+        const stringB = document.getElementById('stringB').value;
+
+        const response = await fetch('/api/avalanche', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ string_a: stringA, string_b: stringB })
+        });
+
+        const data = await response.json();
+
+        document.getElementById('hashA').textContent = data.hash_a;
+        document.getElementById('hashB').textContent = data.hash_b;
+        document.getElementById('flippedBits').textContent = data.flipped_bits;
+        document.getElementById('flipPercent').textContent = data.flip_percentage + '%';
+
+        // 可视化位差异
+        let bitHtml = '';
+        for (let i = 0; i < 256; i++) {
+            const bitA = data.binary_a[i];
+            const bitB = data.binary_b[i];
+            const className = bitA === bitB ? 'bit-same' : 'bit-diff';
+            bitHtml += `<span class="${className}">${bitA}</span>`;
+            if ((i + 1) % 64 === 0) bitHtml += '<br>';
+        }
+        document.getElementById('bitVisual').innerHTML = bitHtml;
+
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('placeholder').style.display = 'none';
+    }
+</script>
+{% endblock %}

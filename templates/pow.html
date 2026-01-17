@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}PoW 挖矿模拟器 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">⛏️ 工作量证明模拟器</h1>
+    <p class="page-subtitle">寻找满足难度目标的 Nonce - 体验挖矿的核心原理</p>
+</div>
+
+<div class="tool-layout">
+    <div class="panel">
+        <h2 class="panel-title">📝 挖矿参数</h2>
+
+        <div class="input-group">
+            <label class="input-label">区块数据（模拟区块头）</label>
+            <input type="text" id="blockData" class="input-field"
+                value="Block #100 | PrevHash: 000abc | Tx: Alice->Bob 1 BTC" placeholder="输入区块数据">
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">难度（前导零个数）</label>
+            <input type="range" id="difficulty" min="1" max="6" value="4" style="width: 100%;"
+                oninput="updateDiffLabel()">
+            <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.8rem;">
+                <span>1 (简单)</span>
+                <span id="diffLabel">当前: 4</span>
+                <span>6 (困难)</span>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="startMining()" id="mineBtn">
+            ⛏️ 开始挖矿
+        </button>
+
+        <div class="message info" style="margin-top: 1.5rem;">
+            💡 难度每增加1，预期时间增长约16倍（十六进制）
+        </div>
+
+        <div class="result-box" style="margin-top: 1rem;">
+            <div class="result-label">难度对比（理论预期尝试次数）</div>
+            <div style="margin-top: 0.5rem; font-size: 0.85rem;">
+                <div>难度 1: ~16 次</div>
+                <div>难度 2: ~256 次</div>
+                <div>难度 3: ~4,096 次</div>
+                <div>难度 4: ~65,536 次</div>
+                <div>难度 5: ~1,048,576 次</div>
+                <div>难度 6: ~16,777,216 次</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">📊 挖矿结果</h2>
+
+        <div id="miningProgress" style="display: none;">
+            <div class="message info loading">
+                ⏳ 正在挖矿中...
+            </div>
+        </div>
+
+        <div id="results" style="display: none;">
+            <div id="resultStatus"></div>
+
+            <div class="stats-grid" style="margin-top: 1rem;">
+                <div class="stat-item">
+                    <div class="stat-value" id="resultNonce">0</div>
+                    <div class="stat-label">找到的 Nonce</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="resultAttempts">0</div>
+                    <div class="stat-label">尝试次数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="resultTime">0</div>
+                    <div class="stat-label">耗时（秒）</div>
+                </div>
+            </div>
+
+            <div class="result-box" style="margin-top: 1.5rem;">
+                <div class="result-label">符合条件的哈希</div>
+                <div class="result-value" id="resultHash" style="font-size: 0.8rem;"></div>
+            </div>
+
+            <div class="result-box">
+                <div class="result-label">验证不对称性</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                    <div>求解耗时: <span id="solveTime">-</span></div>
+                    <div>验证耗时: <span style="color: var(--accent-green);">&lt;1ms</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="placeholder" class="message info">
+            👆 设置参数并点击"开始挖矿"
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function updateDiffLabel() {
+        const diff = document.getElementById('difficulty').value;
+        document.getElementById('diffLabel').textContent = '当前: ' + diff;
+    }
+
+    async function startMining() {
+        const data = document.getElementById('blockData').value;
+        const difficulty = parseInt(document.getElementById('difficulty').value);
+
+        document.getElementById('miningProgress').style.display = 'block';
+        document.getElementById('results').style.display = 'none';
+        document.getElementById('placeholder').style.display = 'none';
+        document.getElementById('mineBtn').disabled = true;
+
+        try {
+            const response = await fetch('/api/pow/mine', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data, difficulty })
+            });
+
+            const result = await response.json();
+
+            document.getElementById('miningProgress').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+
+            if (result.success) {
+                document.getElementById('resultStatus').innerHTML = `
+                <div class="validation-status valid">
+                    ✅ 挖矿成功！找到有效 Nonce
+                </div>`;
+                document.getElementById('resultNonce').textContent = result.nonce.toLocaleString();
+                document.getElementById('resultHash').textContent = result.hash;
+            } else {
+                document.getElementById('resultStatus').innerHTML = `
+                <div class="validation-status invalid">
+                    ❌ 未能在限定次数内找到有效 Nonce
+                </div>`;
+                document.getElementById('resultNonce').textContent = '-';
+                document.getElementById('resultHash').textContent = '未找到';
+            }
+
+            document.getElementById('resultAttempts').textContent = result.attempts.toLocaleString();
+            document.getElementById('resultTime').textContent = result.time_seconds;
+            document.getElementById('solveTime').textContent = result.time_seconds + 's';
+
+        } catch (error) {
+            alert('挖矿失败: ' + error.message);
+        }
+
+        document.getElementById('mineBtn').disabled = false;
+    }
+</script>
+{% endblock %}

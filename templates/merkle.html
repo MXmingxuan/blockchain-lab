@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}默克尔树计算器 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🌲 默克尔树计算器</h1>
+    <p class="page-subtitle">将多笔交易压缩成单一根哈希 - 轻节点验证的基础</p>
+</div>
+
+<div class="tool-layout">
+    <div class="panel">
+        <h2 class="panel-title">📝 输入交易</h2>
+
+        <div class="input-group">
+            <label class="input-label">交易列表（每行一笔）</label>
+            <textarea id="transactions" class="input-field" rows="6"
+                placeholder="Alice -> Bob: 1 BTC&#10;Bob -> Charlie: 0.5 BTC&#10;Charlie -> David: 0.3 BTC&#10;David -> Eve: 0.1 BTC">Alice -> Bob: 1 BTC
+Bob -> Charlie: 0.5 BTC
+Charlie -> David: 0.3 BTC
+David -> Eve: 0.1 BTC</textarea>
+        </div>
+
+        <button class="btn btn-primary" onclick="buildTree()">
+            🌲 构建默克尔树
+        </button>
+
+        <div class="message info" style="margin-top: 1.5rem;">
+            💡 输入 2、4 或 8 笔交易可以得到完美的二叉树结构
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">🌳 树结构</h2>
+
+        <div id="merkleRoot" style="display: none;">
+            <div class="result-box">
+                <div class="result-label">默克尔根 (Merkle Root)</div>
+                <div class="result-value" id="rootHash"></div>
+            </div>
+        </div>
+
+        <div id="merkleTree" class="merkle-tree" style="margin-top: 1.5rem;"></div>
+
+        <div id="placeholder" class="message info">
+            👆 输入交易并点击构建按钮查看树结构
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function buildTree() {
+        const textarea = document.getElementById('transactions');
+        const transactions = textarea.value.split('\n').filter(t => t.trim());
+
+        if (transactions.length < 2) {
+            alert('请至少输入 2 笔交易');
+            return;
+        }
+
+        const response = await fetch('/api/merkle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transactions })
+        });
+
+        const data = await response.json();
+
+        // 显示根哈希
+        document.getElementById('rootHash').textContent = data.merkle_root;
+        document.getElementById('merkleRoot').style.display = 'block';
+
+        // 渲染树结构
+        renderTree(data.levels);
+
+        document.getElementById('placeholder').style.display = 'none';
+    }
+
+    function renderTree(levels) {
+        const container = document.getElementById('merkleTree');
+        let html = '';
+
+        levels.forEach((level, levelIndex) => {
+            const isRoot = levelIndex === 0;
+            const isLeaf = levelIndex === levels.length - 1;
+
+            html += '<div class="merkle-level">';
+
+            level.forEach(node => {
+                const nodeClass = isRoot ? 'root' : (isLeaf ? 'leaf' : '');
+
+                html += `
+                <div class="merkle-node ${nodeClass} fade-in">
+                    <div class="merkle-hash">${node.hash.substring(0, 12)}...</div>
+                    ${node.data ? `<div class="merkle-data">${node.data}</div>` : ''}
+                </div>`;
+            });
+
+            html += '</div>';
+
+            // 添加连接线（除了最后一层）
+            if (levelIndex < levels.length - 1) {
+                html += '<div style="text-align: center; color: var(--accent-green); font-size: 1.2rem;">↓</div>';
+            }
+        });
+
+        container.innerHTML = html;
+    }
+</script>
+{% endblock %}
