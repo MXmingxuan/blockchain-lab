@@ -1,22 +1,49 @@
-/* 区块链密码学工具 - 样式表 */
+/* 区块链密码学工具 - 雅典广场主题 */
+/* Agora (Greek & Elegant) Style */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Lato:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-    --bg-primary: #0a0a0f;
-    --bg-secondary: #12121a;
-    --bg-card: #1a1a24;
-    --bg-card-hover: #22222e;
-    --text-primary: #e4e4e7;
-    --text-secondary: #a1a1aa;
-    --text-muted: #71717a;
-    --accent-blue: #3b82f6;
-    --accent-purple: #8b5cf6;
-    --accent-green: #10b981;
-    --accent-red: #ef4444;
-    --accent-orange: #f59e0b;
-    --border-color: #27272a;
-    --gradient-1: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-    --gradient-2: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
-    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.5);
+    /* 大理石色板 */
+    --bg-body: #fdfbf7;
+    /* Alabaster */
+    --bg-surface: #ffffff;
+    /* Pure White */
+    --bg-surface-alt: #f8f6f2;
+    /* Warm Grey */
+
+    /* 经典配色 */
+    --primary: #004e7c;
+    /* Aegean Blue */
+    --primary-dark: #003355;
+    --primary-light: #e6f0f7;
+
+    --accent-gold: #c5a059;
+    /* Laurel Gold */
+    --accent-gold-light: #f3e9d2;
+    --accent-gold-dim: #d4bda8;
+
+    /* 文字 */
+    --text-primary: #2d2a26;
+    /* Charcoal */
+    --text-secondary: #5d5a56;
+    --text-muted: #8d8a86;
+
+    /* 状态色 - 降低饱和度以匹配古典感 */
+    --success: #3d7a5d;
+    /* Olive Green */
+    --warning: #b08d55;
+    /* Bronze */
+    --danger: #9a3324;
+    /* Terracotta Red */
+
+    /* 边框 */
+    --border-light: #eaddcf;
+    --border-gold: #c5a059;
+
+    /* 阴影 - 柔和 */
+    --shadow-card: 0 4px 20px rgba(45, 42, 38, 0.05);
+    --shadow-hover: 0 10px 30px rgba(45, 42, 38, 0.08);
 }
 
 * {
@@ -26,150 +53,235 @@
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg-primary);
+    font-family: 'Lato', 'Helvetica Neue', sans-serif;
+    background-color: var(--bg-body);
     color: var(--text-primary);
-    min-height: 100vh;
-    line-height: 1.6;
+    line-height: 1.7;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232d2a26' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
-/* 导航栏 */
+/* 导航栏 - 希腊神庙风格 */
 .navbar {
-    background: rgba(18, 18, 26, 0.8);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border-color);
-    padding: 1rem 2rem;
+    background: var(--bg-surface);
+    border-bottom: 3px double var(--accent-gold);
+    /* 双线边框 */
+    padding: 1.2rem 0;
     position: fixed;
     width: 100%;
     top: 0;
     z-index: 100;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 }
 
 .navbar-content {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
+    padding: 0 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .logo {
+    font-family: 'Cinzel', serif;
     font-size: 1.5rem;
     font-weight: 700;
-    background: var(--gradient-1);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--primary);
     text-decoration: none;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logo::before {
+    content: "🏛️";
+    font-size: 1.4rem;
 }
 
 .nav-links {
     display: flex;
-    gap: 2rem;
+    gap: 2.5rem;
     list-style: none;
 }
 
 .nav-links a {
+    font-family: 'Cinzel', serif;
     color: var(--text-secondary);
     text-decoration: none;
-    font-weight: 500;
-    transition: color 0.3s;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    transition: all 0.3s;
+    position: relative;
+    padding: 0.5rem 0;
 }
 
 .nav-links a:hover {
-    color: var(--text-primary);
+    color: var(--primary);
+}
+
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 50%;
+    background-color: var(--accent-gold);
+    transition: all 0.3s ease;
+}
+
+.nav-links a:hover::after {
+    width: 100%;
+    left: 0;
 }
 
 /* 主容器 */
 .container {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 6rem 2rem 2rem;
+    padding: 8rem 2rem 5rem;
 }
 
-/* 页面标题 */
+/* 页面标题 - 铭文感 */
 .page-header {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 5rem;
+    position: relative;
 }
 
 .page-title {
-    font-size: 3rem;
-    font-weight: 800;
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--primary);
     margin-bottom: 1rem;
-    background: var(--gradient-1);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    letter-spacing: -0.01em;
 }
 
 .page-subtitle {
-    color: var(--text-secondary);
+    font-family: 'Lato', sans-serif;
     font-size: 1.2rem;
+    font-weight: 300;
+    color: var(--text-secondary);
     max-width: 600px;
     margin: 0 auto;
+    font-style: italic;
 }
 
-/* 卡片网格 */
+.page-header::after {
+    content: "⬥";
+    display: block;
+    color: var(--accent-gold);
+    font-size: 1.5rem;
+    margin-top: 2rem;
+}
+
+/* 分区标题 - 罗马柱式 */
+h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+h2::before {
+    content: "";
+    /* 可以放图标 */
+    display: none;
+}
+
+/* 卡片 - 典雅风格 */
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 2.5rem;
+    margin-bottom: 5rem;
 }
 
-/* 工具卡片 */
 .tool-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 2rem;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    text-decoration: none;
+    background: var(--bg-surface);
+    /* 双线边框模拟古典装饰 */
+    border: 3px double var(--bg-surface-alt);
+    border-radius: 4px;
+    /* 直角或微圆角更古典 */
+    padding: 2.5rem 2rem;
     display: block;
+    text-decoration: none;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .tool-card:hover {
-    background: var(--bg-card-hover);
-    border-color: var(--accent-blue);
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--accent-gold-dim);
+}
+
+.tool-card::before {
+    /* 顶部金色装饰线 */
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--accent-gold);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tool-card:hover::before {
+    opacity: 1;
 }
 
 .tool-icon {
     width: 60px;
     height: 60px;
-    border-radius: 12px;
+    /* 去除圆角，使用菱形或方形 */
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem;
+    font-size: 2rem;
     margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-light);
+    background: transparent !important;
+    color: var(--primary);
+    margin: 0 auto 1.5rem auto;
+    /* 居中 */
 }
 
-.tool-icon.hash { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
-.tool-icon.chain { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); }
-.tool-icon.tree { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-.tool-icon.sign { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-.tool-icon.address { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
-
 .tool-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    color: var(--text-primary);
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 1rem;
+    text-align: center;
 }
 
 .tool-desc {
     color: var(--text-secondary);
     font-size: 0.95rem;
+    text-align: center;
+    line-height: 1.6;
 }
 
 /* 工具页面布局 */
 .tool-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+    gap: 3rem;
 }
 
 @media (max-width: 900px) {
@@ -178,450 +290,207 @@ body {
     }
 }
 
-/* 面板 */
+/* 面板 - 纸莎草质感 */
 .panel {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.5rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 2px;
+    padding: 2.5rem;
+    box-shadow: var(--shadow-card);
+    position: relative;
+}
+
+/* 面板四角装饰 */
+.panel::before {
+    content: "";
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border: 1px solid var(--bg-surface-alt);
+    pointer-events: none;
 }
 
 .panel-title {
-    font-size: 1.2rem;
+    font-family: 'Cinzel', serif;
+    font-size: 1.4rem;
     font-weight: 600;
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    color: var(--text-primary);
+    margin-bottom: 2rem;
+    text-align: center;
+    letter-spacing: 0.05em;
 }
 
-/* 输入框 */
+.panel-title::after {
+    content: "— ⚜ —";
+    display: block;
+    font-size: 0.8rem;
+    color: var(--accent-gold);
+    margin-top: 0.5rem;
+    font-weight: normal;
+}
+
+/* 输入框 - 简洁古典 */
 .input-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .input-label {
     display: block;
-    font-size: 0.9rem;
-    font-weight: 500;
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    font-weight: 600;
     color: var(--text-secondary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.05em;
 }
 
 .input-field {
     width: 100%;
-    padding: 0.875rem 1rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-primary);
+    padding: 1rem;
+    background: var(--bg-surface-alt);
+    border: 1px solid var(--border-light);
+    border-radius: 0;
+    /* 直角 */
+    font-family: 'Lato', sans-serif;
     font-size: 1rem;
-    transition: border-color 0.3s;
+    color: var(--text-primary);
+    transition: all 0.3s;
 }
 
 .input-field:focus {
     outline: none;
-    border-color: var(--accent-blue);
+    border-color: var(--accent-gold);
+    background: var(--bg-surface);
+    box-shadow: 0 0 0 2px rgba(197, 160, 89, 0.1);
 }
 
 textarea.input-field {
     min-height: 120px;
-    resize: vertical;
-    font-family: 'Fira Code', monospace;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
 }
 
-/* 按钮 */
+/* 按钮 - 铭文风格 */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    padding: 0.875rem 1.5rem;
-    font-size: 1rem;
+    gap: 0.75rem;
+    padding: 1rem 2rem;
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
     font-weight: 600;
-    border: none;
-    border-radius: 8px;
+    border-radius: 2px;
     cursor: pointer;
     transition: all 0.3s;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
 }
 
 .btn-primary {
-    background: var(--gradient-1);
-    color: white;
+    background-color: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
 }
 
 .btn-primary:hover {
-    opacity: 0.9;
-    transform: translateY(-2px);
+    background-color: var(--primary-dark);
+    box-shadow: 0 5px 15px rgba(0, 78, 124, 0.2);
 }
 
 .btn-secondary {
-    background: var(--bg-secondary);
+    background-color: transparent;
     color: var(--text-primary);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-light);
 }
 
 .btn-secondary:hover {
-    background: var(--bg-card-hover);
+    border-color: var(--accent-gold);
+    color: var(--primary);
+    background-color: var(--bg-surface-alt);
 }
 
-.btn-danger {
-    background: var(--accent-red);
-    color: white;
-}
-
-.btn-success {
-    background: var(--accent-green);
-    color: white;
-}
-
-.btn-group {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-/* 结果显示 */
+/* 结果框 */
 .result-box {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-top: 1rem;
+    background: var(--bg-surface-alt);
+    border: 1px solid var(--border-light);
+    border-radius: 2px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    position: relative;
+}
+
+.result-box::before {
+    content: "";
+    /* 左侧金色线条 */
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent-gold);
 }
 
 .result-label {
-    font-size: 0.8rem;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
     color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
 }
 
 .result-value {
-    font-family: 'Fira Code', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 0.9rem;
-    word-break: break-all;
-    color: var(--accent-green);
+    color: var(--text-primary);
 }
 
 .result-value.error {
-    color: var(--accent-red);
+    color: var(--danger);
 }
 
-/* 哈希对比 */
-.hash-compare {
-    display: grid;
-    gap: 1rem;
-}
-
-.hash-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-}
-
-.hash-label {
-    min-width: 80px;
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.hash-value {
-    font-family: 'Fira Code', monospace;
-    font-size: 0.85rem;
-    word-break: break-all;
-    flex: 1;
-}
-
-/* 位可视化 */
-.bit-visual {
-    font-family: 'Fira Code', monospace;
-    font-size: 0.7rem;
-    line-height: 1.8;
-    letter-spacing: 1px;
-    word-break: break-all;
-}
-
-.bit-same { color: var(--text-muted); }
-.bit-diff { color: var(--accent-red); background: rgba(239, 68, 68, 0.2); }
-
-/* 统计 */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-top: 1.5rem;
-}
-
-.stat-item {
-    text-align: center;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border-radius: 8px;
-}
-
-.stat-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--accent-blue);
-}
-
-.stat-label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-top: 0.25rem;
-}
-
-/* 区块链可视化 */
-.blockchain-visual {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    align-items: center;
-}
-
-.block-card {
-    background: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1rem;
-    width: 100%;
-    max-width: 400px;
-    transition: all 0.3s;
-}
-
+/* 配色覆盖 */
 .block-card.genesis {
-    border-color: var(--accent-purple);
-}
-
-.block-card.invalid {
-    border-color: var(--accent-red);
-    background: rgba(239, 68, 68, 0.1);
-}
-
-.block-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
+    border: 2px solid var(--accent-gold);
+    background: #fffdf5;
 }
 
 .block-index {
-    font-weight: 700;
-    color: var(--accent-blue);
-}
-
-.block-time {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-.block-data {
-    font-family: 'Fira Code', monospace;
-    font-size: 0.85rem;
-    padding: 0.5rem;
-    background: var(--bg-primary);
-    border-radius: 4px;
-    margin-bottom: 0.75rem;
-}
-
-.block-hash {
-    font-family: 'Fira Code', monospace;
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    word-break: break-all;
-}
-
-.block-connector {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: var(--accent-green);
-    font-size: 1.5rem;
-    padding: 0.25rem 0;
-}
-
-/* 默克尔树 */
-.merkle-tree {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-}
-
-.merkle-level {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.merkle-node {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 0.75rem;
-    text-align: center;
-    min-width: 120px;
-}
-
-.merkle-node.root {
-    border-color: var(--accent-green);
-    background: rgba(16, 185, 129, 0.1);
-}
-
-.merkle-node.leaf {
-    border-color: var(--accent-blue);
-}
-
-.merkle-hash {
-    font-family: 'Fira Code', monospace;
-    font-size: 0.7rem;
-    color: var(--text-secondary);
-}
-
-.merkle-data {
-    font-size: 0.8rem;
-    color: var(--text-primary);
-    margin-top: 0.25rem;
-}
-
-/* 签名流程 */
-.signature-flow {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.flow-step {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
+    font-family: 'Cinzel', serif;
+    color: var(--primary);
 }
 
 .step-number {
+    background: var(--primary);
+    color: #fff;
+    font-family: 'Cinzel', serif;
     width: 32px;
     height: 32px;
-    background: var(--gradient-1);
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    flex-shrink: 0;
-}
-
-.step-content {
-    flex: 1;
-}
-
-.step-title {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-/* 地址生成步骤 */
-.address-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.address-step {
-    background: var(--bg-secondary);
-    border-radius: 8px;
-    padding: 1rem;
-    border-left: 3px solid var(--accent-blue);
-}
-
-.address-step:last-child {
-    border-left-color: var(--accent-green);
-    background: rgba(16, 185, 129, 0.1);
-}
-
-.step-name {
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
-}
-
-.step-desc {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-bottom: 0.5rem;
-}
-
-.step-output {
-    font-family: 'Fira Code', monospace;
-    font-size: 0.75rem;
-    color: var(--accent-green);
-    word-break: break-all;
-}
-
-/* 验证状态 */
-.validation-status {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-top: 1rem;
-}
-
-.validation-status.valid {
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid var(--accent-green);
-    color: var(--accent-green);
-}
-
-.validation-status.invalid {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid var(--accent-red);
-    color: var(--accent-red);
-}
-
-/* 动画 */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in {
-    animation: fadeIn 0.3s ease;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
-.loading {
-    animation: pulse 1.5s ease-in-out infinite;
+    margin-right: 0.5rem;
 }
 
 /* 消息提示 */
 .message {
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
+    padding: 1rem 1.5rem;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.95rem;
 }
 
 .message.info {
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid var(--accent-blue);
-    color: var(--accent-blue);
+    background: var(--primary-light);
+    border-color: #dbeafe;
+    color: var(--primary-dark);
 }
 
 .message.success {
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid var(--accent-green);
-    color: var(--accent-green);
-}
-
-.message.error {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid var(--accent-red);
-    color: var(--accent-red);
+    background: #f0fdf4;
+    border-color: #dcfce7;
+    color: var(--success);
 }

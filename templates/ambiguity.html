@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}法律模糊性决策树 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🌳 法律模糊性决策树</h1>
+    <p class="page-subtitle">代码精确性 vs 法律模糊性 — Lessig 教授的洞见</p>
+</div>
+
+<div class="tool-layout">
+    <!-- 左侧：场景选择 -->
+    <div class="panel">
+        <h3 class="panel-title">📋 选择合约场景</h3>
+
+        <div class="result-box" style="margin-bottom: 1rem;">
+            <div class="result-label">Lessig 教授的观点</div>
+            <div style="font-size: 0.95rem; font-style: italic;">
+                "法律允许模糊性以降低谈判成本，但代码要求绝对精确。"
+            </div>
+        </div>
+
+        <div id="scenarios" style="margin-bottom: 1.5rem;">
+            <!-- 动态加载场景 -->
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">显示深度</label>
+            <select id="depth" class="input-field">
+                <option value="2">简化 (2层)</option>
+                <option value="3" selected>标准 (3层)</option>
+                <option value="5">完整 (5层)</option>
+            </select>
+        </div>
+
+        <button class="btn btn-primary" onclick="generateTree()" style="width: 100%;">
+            🌲 生成决策树
+        </button>
+    </div>
+
+    <!-- 右侧：决策树可视化 -->
+    <div class="panel">
+        <h3 class="panel-title">🔀 边缘案例分析</h3>
+
+        <div id="treeResult">
+            <div class="message info">选择一个合约场景，查看需要处理的边缘案例</div>
+        </div>
+
+        <div id="statistics" style="margin-top: 1.5rem; display: none;">
+            <!-- 统计信息 -->
+        </div>
+
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+            <h4 style="margin-bottom: 0.5rem;">💡 为什么智能合约受限？</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">
+                试图用代码覆盖所有边缘情况会导致合约变得不可行的复杂。<br>
+                这就是为什么智能合约目前主要用于<strong>简单、参数清晰</strong>的场景（如博彩、简单金融衍生品）。
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedScenario = null;
+
+    async function loadScenarios() {
+        const response = await fetch('/api/ambiguity/scenarios');
+        const scenarios = await response.json();
+
+        const container = document.getElementById('scenarios');
+        container.innerHTML = '';
+
+        scenarios.forEach(s => {
+            const item = document.createElement('div');
+            item.style.cssText = 'padding: 1rem; border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 0.75rem; cursor: pointer; transition: all 0.2s;';
+            item.id = `scenario-${s.id}`;
+
+            item.onclick = () => {
+                // 清除之前的选中状态
+                document.querySelectorAll('[id^="scenario-"]').forEach(el => {
+                    el.style.borderColor = 'var(--border-subtle)';
+                    el.style.background = 'transparent';
+                });
+                // 设置当前选中
+                item.style.borderColor = 'var(--primary)';
+                item.style.background = 'var(--bg-subtle)';
+                selectedScenario = s.id;
+            };
+
+            item.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: bold;">${s.name}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">${s.base_logic}</div>
+                </div>
+                <div style="text-align: center; padding: 0.25rem 0.75rem; background: var(--primary-light); border-radius: 4px;">
+                    <div style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">${s.edge_case_count}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">边缘案例</div>
+                </div>
+            </div>
+        `;
+
+            container.appendChild(item);
+        });
+    }
+
+    async function generateTree() {
+        if (!selectedScenario) {
+            alert('请先选择一个合约场景');
+            return;
+        }
+
+        const depth = document.getElementById('depth').value;
+
+        const response = await fetch(`/api/ambiguity/generate?scenario=${selectedScenario}&depth=${depth}`);
+        const result = await response.json();
+
+        if (result.error) {
+            document.getElementById('treeResult').innerHTML = `<div class="message error">${result.error}</div>`;
+            return;
+        }
+
+        // 渲染决策树
+        let treeHtml = `
+        <div class="result-box" style="margin-bottom: 1rem;">
+            <div style="font-weight: bold; margin-bottom: 0.5rem;">${result.scenario.name}</div>
+            <div style="font-size: 0.9rem; color: var(--success); margin-bottom: 1rem;">
+                ✅ 基础逻辑: ${result.scenario.base_logic}
+            </div>
+            
+            <div style="font-size: 0.85rem;">
+                <div style="font-weight: bold; margin-bottom: 0.5rem; color: var(--danger);">❓ 但是如果...</div>
+    `;
+
+        result.tree.filter(n => n.type === 'edge_case').forEach(node => {
+            const complexityBar = '█'.repeat(node.complexity) + '░'.repeat(5 - node.complexity);
+            treeHtml += `
+            <div style="padding: 0.5rem; margin-bottom: 0.5rem; background: var(--bg-surface); border-left: 3px solid var(--warning); border-radius: 0 4px 4px 0;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>${node.content}</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">${node.probability}</span>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">
+                    复杂度: ${complexityBar}
+                </div>
+            </div>
+        `;
+        });
+
+        treeHtml += `</div></div>`;
+
+        document.getElementById('treeResult').innerHTML = treeHtml;
+
+        // 显示统计
+        const stats = result.statistics;
+        const statsDiv = document.getElementById('statistics');
+        statsDiv.style.display = 'block';
+        statsDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align: center;">
+            <div style="padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">${stats.total_edge_cases}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">边缘案例</div>
+            </div>
+            <div style="padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: var(--warning);">${stats.estimated_code_lines}+</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">估计代码行</div>
+            </div>
+            <div style="padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: var(--danger);">${stats.low_probability_cases}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">低概率事件</div>
+            </div>
+        </div>
+        
+        <div class="message info" style="margin-top: 1rem;">
+            ${result.lessig_insight.explanation}
+        </div>
+    `;
+    }
+
+    loadScenarios();
+</script>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}科斯定理分析器 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">⚖️ 科斯定理投资分析</h1>
+    <p class="page-subtitle">中心化效率 vs 去中心化成本 — 项目真的需要区块链吗？</p>
+</div>
+
+<div class="tool-layout">
+    <!-- 左侧：项目列表 -->
+    <div class="panel">
+        <h3 class="panel-title">📊 项目对比</h3>
+
+        <div class="result-box" style="margin-bottom: 1rem;">
+            <div class="result-label">科斯定理</div>
+            <div style="font-size: 0.9rem;">
+                企业（中心化）存在是为了降低交易成本。<br>
+                去中心化的代价是<strong>协调成本</strong>。<br>
+                <strong>问题</strong>：一个项目何时应该去中心化？
+            </div>
+        </div>
+
+        <div id="projectList">
+            <!-- 动态加载 -->
+        </div>
+    </div>
+
+    <!-- 右侧：详细分析 -->
+    <div class="panel">
+        <h3 class="panel-title">🔍 详细分析</h3>
+
+        <div id="projectDetail">
+            <div class="message info">点击左侧项目查看科斯定理分析</div>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+            <h4 style="margin-bottom: 0.5rem;">🚩 投资红旗</h4>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                <div style="margin-bottom: 0.25rem;">• 声称去中心化，实际少数人控制</div>
+                <div style="margin-bottom: 0.25rem;">• 用例适合中心化，但强行上链</div>
+                <div>• 治理混乱，无法有效升级</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+            <h4 style="margin-bottom: 0.5rem;">✅ 投资绿旗</h4>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                <div style="margin-bottom: 0.25rem;">• 去中心化程度与用例需求匹配</div>
+                <div style="margin-bottom: 0.25rem;">• 有效的治理机制</div>
+                <div>• 清晰的"为什么需要区块链"答案</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadProjects() {
+        const response = await fetch('/api/coase/list');
+        const projects = await response.json();
+
+        const container = document.getElementById('projectList');
+        container.innerHTML = '';
+
+        projects.forEach(p => {
+            const scoreColor = p.coase_score > 2 ? '#f59e0b' : p.coase_score < -2 ? '#10b981' : '#6b7280';
+
+            const item = document.createElement('div');
+            item.style.cssText = 'padding: 1rem; border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 0.75rem; cursor: pointer; transition: all 0.2s;';
+            item.onmouseover = () => item.style.borderColor = 'var(--primary)';
+            item.onmouseout = () => item.style.borderColor = 'var(--border-subtle)';
+            item.onclick = () => analyzeProject(p.name);
+
+            item.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: bold;">${p.name}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">${p.category}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">去中心化</div>
+                    <div style="font-weight: bold;">${p.actual_decentralization}/10</div>
+                </div>
+            </div>
+            <div style="font-size: 0.85rem; margin-top: 0.5rem; color: ${scoreColor};">
+                科斯分数: ${p.coase_score} — ${p.verdict}
+            </div>
+        `;
+
+            container.appendChild(item);
+        });
+    }
+
+    async function analyzeProject(name) {
+        const response = await fetch(`/api/coase/analyze?name=${encodeURIComponent(name)}`);
+        const result = await response.json();
+
+        if (!result.found) {
+            document.getElementById('projectDetail').innerHTML = `<div class="message error">${result.error}</div>`;
+            return;
+        }
+
+        const analysis = result.analysis;
+        const metrics = result.metrics;
+        const raw = result.raw_scores;
+
+        const verdictColors = { success: '#10b981', warning: '#f59e0b', info: '#6b7280' };
+        const color = verdictColors[analysis.verdict_color];
+
+        document.getElementById('projectDetail').innerHTML = `
+        <div class="result-box" style="margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <div style="font-size: 1.2rem; font-weight: bold;">${result.project.name}</div>
+                    <div style="color: var(--text-muted);">${result.project.category}</div>
+                </div>
+                <div style="text-align: center; padding: 0.5rem 1rem; background: var(--bg-surface); border-radius: 8px;">
+                    <div style="font-size: 1.5rem; font-weight: bold; color: ${color};">${analysis.coase_score}</div>
+                    <div style="font-size: 0.7rem;">科斯分数</div>
+                </div>
+            </div>
+            
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">${result.project.description}</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center;">
+                <div style="padding: 0.5rem; background: var(--bg-surface); border-radius: 4px;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">中心化收益</div>
+                    <div style="font-weight: bold;">${metrics.centralization_benefit}</div>
+                </div>
+                <div style="padding: 0.5rem; background: var(--bg-surface); border-radius: 4px;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">中心化风险</div>
+                    <div style="font-weight: bold;">${metrics.centralization_risk}</div>
+                </div>
+                <div style="padding: 0.5rem; background: var(--bg-surface); border-radius: 4px;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">去中心化成本</div>
+                    <div style="font-weight: bold;">${metrics.decentralization_cost}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="message ${analysis.verdict_color}" style="margin-bottom: 1rem;">
+            <strong>${analysis.coase_verdict}</strong>
+        </div>
+        
+        <div class="result-box">
+            <div class="result-label">匹配度检查</div>
+            ${analysis.mismatch_warning}
+        </div>
+    `;
+    }
+
+    loadProjects();
+</script>
+{% endblock %}

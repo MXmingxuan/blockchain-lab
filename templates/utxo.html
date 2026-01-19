@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}UTXO 可视化 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">📦 UTXO 模型可视化</h1>
+    <p class="page-subtitle">理解比特币的"硬币"模型 - 余额 = 所有未花费输出之和</p>
+</div>
+
+<div class="tool-layout">
+    <div class="panel">
+        <h2 class="panel-title">🔍 查询地址 UTXO</h2>
+
+        <div class="input-group">
+            <label class="input-label">比特币地址</label>
+            <input type="text" id="address" class="input-field" placeholder="输入比特币地址或留空使用演示数据">
+        </div>
+
+        <button class="btn btn-primary" onclick="queryUTXOs()" style="width: 100%;">
+            🔍 查询 UTXO
+        </button>
+
+        <div id="queryResult" style="margin-top: 1.5rem;"></div>
+
+        <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+
+        <h3 class="panel-title" style="margin-top: 0;">💸 模拟转账</h3>
+
+        <div class="input-group">
+            <label class="input-label">发送金额 (BTC)</label>
+            <input type="number" id="sendAmount" class="input-field" value="1.5" step="0.01" min="0">
+        </div>
+
+        <button class="btn btn-secondary" onclick="simulateTransfer()" style="width: 100%;">
+            ⚡ 模拟选币
+        </button>
+
+        <div id="transferResult" style="margin-top: 1rem;"></div>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">🪙 UTXO 硬币视图</h2>
+
+        <div id="coinsView">
+            <div class="message info">
+                查询地址后，UTXO 将显示为"硬币"
+            </div>
+        </div>
+
+        <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+
+        <div class="message info">
+            <strong>💡 UTXO 模型核心概念</strong>
+            <ul style="margin-top: 0.5rem; color: var(--text-secondary); padding-left: 1.5rem;">
+                <li><strong>输入 = 之前的输出</strong>：每笔交易的输入必须引用之前的未花费输出</li>
+                <li><strong>完全消耗</strong>：UTXO 一旦被花费就完全销毁</li>
+                <li><strong>找零机制</strong>：多余的金额会作为新 UTXO 返回给自己</li>
+                <li><strong>并行验证</strong>：不同 UTXO 可以并行验证，提高性能</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentUTXOs = [];
+
+    async function queryUTXOs() {
+        const address = document.getElementById('address').value;
+
+        document.getElementById('queryResult').innerHTML =
+            '<div class="message">正在查询...</div>';
+
+        try {
+            const response = await fetch('/api/utxo/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                currentUTXOs = data.utxos;
+
+                document.getElementById('queryResult').innerHTML = `
+                <div class="result-box">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <div class="result-label">UTXO 数量</div>
+                            <div style="font-size: 1.5rem; font-weight: bold;">${data.utxo_count}</div>
+                        </div>
+                        <div>
+                            <div class="result-label">总余额</div>
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--accent-green);">
+                                ${data.total_btc.toFixed(8)} BTC
+                            </div>
+                        </div>
+                    </div>
+                    ${data.is_mock ? '<div style="margin-top: 0.5rem; color: var(--accent-orange);">⚠️ 使用演示数据</div>' : ''}
+                </div>`;
+
+                renderCoins(data.coins);
+            }
+        } catch (error) {
+            document.getElementById('queryResult').innerHTML =
+                `<div class="message error">查询失败: ${error.message}</div>`;
+        }
+    }
+
+    function renderCoins(coins) {
+        if (!coins || coins.length === 0) {
+            document.getElementById('coinsView').innerHTML =
+                '<div class="message">没有 UTXO</div>';
+            return;
+        }
+
+        let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+
+        coins.forEach(coin => {
+            let bgColor = coin.size === 'large' ? 'var(--accent-green)' :
+                coin.size === 'medium' ? 'var(--accent-blue)' :
+                    coin.size === 'small' ? 'var(--accent-orange)' : 'var(--text-muted)';
+
+            html += `
+            <div class="result-box" style="border-left: 4px solid ${bgColor}; padding: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 1.5rem;">${coin.emoji}</span>
+                    <span style="font-weight: bold; color: ${bgColor};">${coin.value_btc.toFixed(8)} BTC</span>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    TX: ${coin.tx_hash_short} | 确认: ${coin.confirmations}
+                </div>
+            </div>`;
+        });
+
+        html += '</div>';
+        document.getElementById('coinsView').innerHTML = html;
+    }
+
+    async function simulateTransfer() {
+        if (currentUTXOs.length === 0) {
+            document.getElementById('transferResult').innerHTML =
+                '<div class="message warning">请先查询 UTXO</div>';
+            return;
+        }
+
+        const amount = parseFloat(document.getElementById('sendAmount').value);
+
+        try {
+            const response = await fetch('/api/utxo/select', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ utxos: currentUTXOs, amount_btc: amount })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                document.getElementById('transferResult').innerHTML = `
+                <div class="result-box">
+                    <div class="result-label">选币结果</div>
+                    <div style="margin-top: 0.5rem;">
+                        <div>选中 <strong>${data.selected_count}</strong> 个 UTXO</div>
+                        <div>总输入: <strong>${data.total_input_btc.toFixed(8)} BTC</strong></div>
+                        <div>支付: ${amount.toFixed(8)} BTC</div>
+                        <div>找零: <span style="color: var(--accent-orange);">${data.change_btc.toFixed(8)} BTC</span></div>
+                        <div>手续费: ${data.fee_btc.toFixed(8)} BTC</div>
+                    </div>
+                </div>`;
+            } else {
+                document.getElementById('transferResult').innerHTML =
+                    `<div class="message error">${data.error}</div>`;
+            }
+        } catch (error) {
+            document.getElementById('transferResult').innerHTML =
+                `<div class="message error">模拟失败: ${error.message}</div>`;
+        }
+    }
+
+    // 页面加载时自动查询演示数据
+    queryUTXOs();
+</script>
+{% endblock %}

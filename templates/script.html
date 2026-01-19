@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}脚本模拟器 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">📜 比特币脚本模拟器</h1>
+    <p class="page-subtitle">理解堆栈式脚本语言 - 比特币的"智能合约"</p>
+</div>
+
+<div class="tool-layout">
+    <div class="panel">
+        <h2 class="panel-title">🎯 脚本类型</h2>
+
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <button class="btn btn-primary" onclick="runP2PKH(true)" style="width: 100%;">
+                ▶️ 运行 P2PKH (有效签名)
+            </button>
+            <button class="btn btn-secondary" onclick="runP2PKH(false)" style="width: 100%;">
+                ❌ 运行 P2PKH (无效签名)
+            </button>
+        </div>
+
+        <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+
+        <h3 class="panel-title" style="margin-top: 0;">📋 P2PKH 脚本结构</h3>
+
+        <div class="result-box" style="font-family: monospace; font-size: 0.85rem;">
+            <div class="result-label">解锁脚本 (ScriptSig)</div>
+            <div style="color: var(--accent-blue);">&lt;Signature&gt; &lt;PublicKey&gt;</div>
+        </div>
+
+        <div class="result-box" style="font-family: monospace; font-size: 0.85rem; margin-top: 0.5rem;">
+            <div class="result-label">锁定脚本 (ScriptPubKey)</div>
+            <div style="color: var(--accent-purple);">
+                OP_DUP OP_HASH160 &lt;PubKeyHash&gt; OP_EQUALVERIFY OP_CHECKSIG
+            </div>
+        </div>
+
+        <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+
+        <h3 class="panel-title" style="margin-top: 0;">📖 操作码参考</h3>
+        <div id="opcodeRef"></div>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">⚙️ 执行过程</h2>
+
+        <div id="executionTrace">
+            <div class="message info">
+                点击"运行"按钮观察脚本执行过程
+            </div>
+        </div>
+
+        <div id="executionResult" style="margin-top: 1rem;"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function runP2PKH(validSig) {
+        document.getElementById('executionTrace').innerHTML =
+            '<div class="message">正在执行...</div>';
+
+        try {
+            const response = await fetch('/api/script/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ script_type: 'p2pkh', valid_sig: validSig })
+            });
+            const data = await response.json();
+
+            renderTrace(data.trace);
+
+            let resultColor = data.success ? 'var(--accent-green)' : 'var(--accent-red)';
+            let resultIcon = data.success ? '✅' : '❌';
+
+            document.getElementById('executionResult').innerHTML = `
+            <div class="result-box" style="border-left: 4px solid ${resultColor};">
+                <div style="font-size: 1.25rem; font-weight: bold;">
+                    ${resultIcon} 执行结果: ${data.success ? '成功' : '失败'}
+                </div>
+                <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                    总步骤: ${data.total_steps}
+                </div>
+                <div style="font-family: monospace; margin-top: 0.5rem;">
+                    最终堆栈: [${data.final_stack.join(', ') || '空'}]
+                </div>
+            </div>`;
+
+        } catch (error) {
+            document.getElementById('executionTrace').innerHTML =
+                `<div class="message error">执行失败: ${error.message}</div>`;
+        }
+    }
+
+    function renderTrace(trace) {
+        if (!trace || trace.length === 0) {
+            document.getElementById('executionTrace').innerHTML =
+                '<div class="message">没有执行记录</div>';
+            return;
+        }
+
+        let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+
+        trace.forEach(step => {
+            let opColor = step.operation.startsWith('OP_') ? 'var(--accent-purple)' : 'var(--accent-blue)';
+
+            html += `
+            <div class="flow-step">
+                <div class="step-number">${step.step}</div>
+                <div class="step-content">
+                    <div class="step-title" style="color: ${opColor};">${step.operation}</div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">${step.description}</div>
+                    <div style="font-family: monospace; font-size: 0.8rem; margin-top: 0.25rem; color: var(--text-muted);">
+                        堆栈: [${step.stack_after.join(', ') || '空'}]
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        html += '</div>';
+        document.getElementById('executionTrace').innerHTML = html;
+    }
+
+    async function loadOpcodeRef() {
+        try {
+            const response = await fetch('/api/script/opcodes');
+            const data = await response.json();
+
+            let html = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+
+            data.forEach(op => {
+                html += `
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--surface); border-radius: 4px;">
+                    <span style="font-family: monospace; color: var(--accent-purple);">${op.opcode}</span>
+                    <span style="color: var(--text-secondary); font-size: 0.85rem;">${op.description}</span>
+                </div>`;
+            });
+
+            html += '</div>';
+            document.getElementById('opcodeRef').innerHTML = html;
+        } catch (error) {
+            console.error('加载操作码失败:', error);
+        }
+    }
+
+    // 页面加载时加载操作码参考
+    loadOpcodeRef();
+</script>
+{% endblock %}

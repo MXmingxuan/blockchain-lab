@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}粉尘分析 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">💨 粉尘分析器</h1>
+    <p class="page-subtitle">识别粉尘 UTXO，计算真实可用余额</p>
+</div>
+
+<div class="tool-layout">
+    <div class="panel">
+        <h2 class="panel-title">⚙️ 分析设置</h2>
+
+        <div class="input-group">
+            <label class="input-label">当前费率 (sat/vB)</label>
+            <input type="number" id="feeRate" class="input-field" value="20" min="1" max="500">
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+            <button class="btn btn-secondary" onclick="setFeeRate(5)">低 (5)</button>
+            <button class="btn btn-secondary" onclick="setFeeRate(20)">中 (20)</button>
+            <button class="btn btn-secondary" onclick="setFeeRate(50)">高 (50)</button>
+            <button class="btn btn-secondary" onclick="setFeeRate(100)">极高 (100)</button>
+        </div>
+
+        <button class="btn btn-primary" onclick="analyzeDust()" style="width: 100%;">
+            🔍 分析粉尘
+        </button>
+
+        <div id="analysisResult" style="margin-top: 1.5rem;"></div>
+
+        <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+
+        <h3 class="panel-title" style="margin-top: 0;">💰 余额对比</h3>
+        <div id="balanceComparison"></div>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">📊 不同费率下的粉尘情况</h2>
+
+        <div id="scenariosView">
+            <div class="message info">
+                点击"分析粉尘"查看不同费率下的影响
+            </div>
+        </div>
+
+        <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+
+        <div class="message info">
+            <strong>💡 什么是粉尘 (Dust)?</strong>
+            <p style="margin-top: 0.5rem; color: var(--text-secondary);">
+                粉尘是指那些金额太小、以至于花费它们的手续费超过其价值的 UTXO。
+            </p>
+            <ul style="margin-top: 0.5rem; color: var(--text-secondary); padding-left: 1.5rem;">
+                <li>当费率上涨时，更多 UTXO 会变成粉尘</li>
+                <li>粉尘会降低钱包的真实流动性</li>
+                <li>建议在低费率时合并小额 UTXO</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function setFeeRate(rate) {
+        document.getElementById('feeRate').value = rate;
+        analyzeDust();
+    }
+
+    async function analyzeDust() {
+        const feeRate = parseInt(document.getElementById('feeRate').value);
+
+        try {
+            const response = await fetch('/api/dust/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fee_rate: feeRate })
+            });
+            const data = await response.json();
+
+            // 显示分析结果
+            let dustColor = data.dust_percentage > 50 ? 'var(--accent-red)' :
+                data.dust_percentage > 20 ? 'var(--accent-orange)' : 'var(--accent-green)';
+
+            document.getElementById('analysisResult').innerHTML = `
+            <div class="result-box">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <div class="result-label">总 UTXO</div>
+                        <div style="font-size: 1.25rem; font-weight: bold;">${data.total_utxos}</div>
+                    </div>
+                    <div>
+                        <div class="result-label">粉尘 UTXO</div>
+                        <div style="font-size: 1.25rem; font-weight: bold; color: ${dustColor};">
+                            ${data.dust_count} (${data.dust_percentage.toFixed(1)}%)
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; padding: 0.75rem; background: var(--surface-elevated); border-radius: 8px;">
+                    ${data.recommendation}
+                </div>
+            </div>`;
+
+            // 显示余额对比
+            document.getElementById('balanceComparison').innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div class="result-box">
+                    <div class="result-label">名义余额</div>
+                    <div style="font-size: 1.25rem;">${data.nominal_balance_btc.toFixed(8)} BTC</div>
+                </div>
+                <div class="result-box" style="border-left: 4px solid var(--accent-green);">
+                    <div class="result-label">有效余额</div>
+                    <div style="font-size: 1.25rem; color: var(--accent-green);">${data.effective_balance_btc.toFixed(8)} BTC</div>
+                </div>
+                <div class="result-box" style="border-left: 4px solid var(--accent-red);">
+                    <div class="result-label">锁定在粉尘中</div>
+                    <div style="font-size: 1.25rem; color: var(--accent-red);">${data.locked_in_dust_btc.toFixed(8)} BTC</div>
+                </div>
+            </div>`;
+
+            // 显示不同费率场景
+            renderScenarios(data.scenarios);
+
+        } catch (error) {
+            document.getElementById('analysisResult').innerHTML =
+                `<div class="message error">分析失败: ${error.message}</div>`;
+        }
+    }
+
+    function renderScenarios(scenarios) {
+        if (!scenarios) return;
+
+        let html = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+
+        scenarios.forEach(s => {
+            let barWidth = Math.min(s.dust_percentage, 100);
+            let barColor = s.dust_percentage > 50 ? 'var(--accent-red)' :
+                s.dust_percentage > 20 ? 'var(--accent-orange)' : 'var(--accent-green)';
+
+            html += `
+            <div class="result-box" style="padding: 0.5rem 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <span>${s.fee_rate} sat/vB ${s.fee_level}</span>
+                    <span style="font-weight: bold;">${s.dust_percentage}% 粉尘</span>
+                </div>
+                <div style="height: 8px; background: var(--surface); border-radius: 4px; overflow: hidden;">
+                    <div style="height: 100%; width: ${barWidth}%; background: ${barColor};"></div>
+                </div>
+            </div>`;
+        });
+
+        html += '</div>';
+        document.getElementById('scenariosView').innerHTML = html;
+    }
+
+    // 页面加载时自动分析
+    analyzeDust();
+</script>
+{% endblock %}

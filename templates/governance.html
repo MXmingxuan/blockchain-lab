@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}治理与硬分叉监控 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🏛️ 治理与硬分叉监控</h1>
+    <p class="page-subtitle">追踪区块链历史上的治理失败与社区分裂 — Gensler 教授的治理难题</p>
+</div>
+
+<div class="tool-layout">
+    <!-- 左侧：历史分叉 -->
+    <div class="panel">
+        <h3 class="panel-title">📜 历史硬分叉事件</h3>
+
+        <div id="forkHistory">
+            <!-- 动态加载 -->
+        </div>
+    </div>
+
+    <!-- 右侧：风险分析 -->
+    <div class="panel">
+        <h3 class="panel-title">⚠️ 分叉风险分析</h3>
+
+        <div class="input-group">
+            <label class="input-label">矿工信号支持率 (%)</label>
+            <input type="range" id="minerSupport" class="input-field" min="0" max="100" value="95"
+                oninput="updateRiskLabel('minerSupport')">
+            <span id="minerSupportLabel">95%</span>
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">社区分裂度 (%)</label>
+            <input type="range" id="communitySplit" class="input-field" min="0" max="100" value="10"
+                oninput="updateRiskLabel('communitySplit')">
+            <span id="communitySplitLabel">10%</span>
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">代码变更规模</label>
+            <select id="codeChange" class="input-field">
+                <option value="small">小型 (Bug修复)</option>
+                <option value="medium" selected>中型 (功能升级)</option>
+                <option value="large">大型 (协议变更)</option>
+            </select>
+        </div>
+
+        <button class="btn btn-primary" onclick="analyzeRisk()" style="width: 100%;">
+            🔍 分析风险
+        </button>
+
+        <div id="riskResult" style="margin-top: 1.5rem;"></div>
+
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+            <h4 style="margin-bottom: 0.5rem;">💡 投资启示</h4>
+            <ul style="font-size: 0.85rem; color: var(--text-secondary); padding-left: 1rem;">
+                <li>分叉前持有可获得两条链代币</li>
+                <li>治理良好的项目应享估值溢价</li>
+                <li>频繁争议的项目应当折价</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateRiskLabel(id) {
+        const value = document.getElementById(id).value;
+        document.getElementById(id + 'Label').textContent = value + '%';
+    }
+
+    async function loadForkHistory() {
+        const response = await fetch('/api/governance/forks');
+        const forks = await response.json();
+
+        const container = document.getElementById('forkHistory');
+        container.innerHTML = '';
+
+        forks.forEach(fork => {
+            container.innerHTML += `
+            <div style="padding: 1rem; border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong>${fork.name}</strong>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">${fork.date}</span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--primary); margin-bottom: 0.5rem;">
+                    ${fork.original} → ${fork.fork}
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                    <strong>起因：</strong>${fork.cause.substring(0, 80)}...
+                </div>
+                <div style="font-size: 0.85rem; padding: 0.5rem; background: var(--bg-subtle); border-radius: 4px;">
+                    💡 ${fork.lesson.substring(0, 60)}...
+                </div>
+            </div>
+        `;
+        });
+    }
+
+    async function analyzeRisk() {
+        const minerSupport = parseInt(document.getElementById('minerSupport').value);
+        const communitySplit = parseInt(document.getElementById('communitySplit').value);
+        const codeChange = document.getElementById('codeChange').value;
+
+        const response = await fetch('/api/governance/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                miner_signaling: minerSupport,
+                community_sentiment: communitySplit,
+                code_change_size: codeChange
+            })
+        });
+
+        const result = await response.json();
+
+        const riskColors = { '🔴 高风险': '#ef4444', '🟡 中等风险': '#f59e0b', '🟢 低风险': '#10b981' };
+        const color = riskColors[result.risk_level] || '#6b7280';
+
+        let factorsHtml = '';
+        result.risk_factors.forEach(f => {
+            factorsHtml += `<div style="font-size: 0.85rem; margin-bottom: 0.25rem;">${f}</div>`;
+        });
+
+        document.getElementById('riskResult').innerHTML = `
+        <div class="result-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div style="font-size: 1.5rem;">${result.risk_level}</div>
+                <div style="font-size: 2rem; font-weight: bold; color: ${color};">${result.risk_score}</div>
+            </div>
+            ${factorsHtml || '<div style="color: var(--success);">✅ 未发现明显风险因素</div>'}
+        </div>
+        <div class="message info" style="margin-top: 1rem;">
+            ${result.recommendation}
+        </div>
+    `;
+    }
+
+    loadForkHistory();
+</script>
+{% endblock %}

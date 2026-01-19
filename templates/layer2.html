@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Layer 2 支付通道 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">⚡ Layer 2 支付通道</h1>
+    <p class="page-subtitle">体验闪电网络的链下交易魔力 — 万笔交易，链上只需两笔</p>
+</div>
+
+<div class="tool-layout">
+    <!-- 左侧：通道操作 -->
+    <div class="panel">
+        <h3 class="panel-title">🔗 支付通道模拟</h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="text-align: center; padding: 1rem; background: #eff6ff; border-radius: 8px;">
+                <div style="font-size: 2rem;">👩</div>
+                <div style="font-weight: bold;">Alice</div>
+                <div id="aliceBalance" style="color: var(--primary);">5.0000 BTC</div>
+            </div>
+            <div style="text-align: center; padding: 1rem; background: #fef3c7; border-radius: 8px;">
+                <div style="font-size: 2rem;">👨</div>
+                <div style="font-weight: bold;">Bob</div>
+                <div id="bobBalance" style="color: var(--warning);">5.0000 BTC</div>
+            </div>
+        </div>
+
+        <div id="channelStatus" class="message info" style="margin-bottom: 1rem;">
+            通道未开通。点击"开通通道"开始模拟。
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">模拟交易数量</label>
+            <input type="number" id="txCount" class="input-field" value="10000" min="100" max="100000">
+        </div>
+
+        <div class="btn-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+            <button class="btn btn-primary" onclick="openChannel()">🔓 开通通道</button>
+            <button class="btn btn-secondary" onclick="simulateTxs()">⚡ 模拟交易</button>
+        </div>
+
+        <button class="btn btn-secondary" onclick="compareL1L2()" style="width: 100%; margin-top: 0.5rem;">
+            📊 对比 Layer 1 vs Layer 2
+        </button>
+    </div>
+
+    <!-- 右侧：对比结果 -->
+    <div class="panel">
+        <h3 class="panel-title">📈 效率对比</h3>
+
+        <div id="comparisonResult">
+            <div class="message info">点击"对比 Layer 1 vs Layer 2"查看详细对比</div>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+            <h4 style="margin-bottom: 0.5rem;">💡 Layer 2 原理</h4>
+            <ul style="font-size: 0.9rem; color: var(--text-secondary); padding-left: 1.2rem;">
+                <li><strong>链上</strong>：开通通道（锁定资金）</li>
+                <li><strong>链下</strong>：无限次即时转账（仅更新本地状态）</li>
+                <li><strong>链上</strong>：关闭通道（广播最终余额）</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    let channelOpen = false;
+
+    async function openChannel() {
+        const response = await fetch('/api/layer2/open', { method: 'POST' });
+        const result = await response.json();
+
+        if (result.success) {
+            channelOpen = true;
+            document.getElementById('channelStatus').innerHTML = `✅ ${result.message}`;
+            document.getElementById('channelStatus').className = 'message success';
+        }
+    }
+
+    async function simulateTxs() {
+        if (!channelOpen) {
+            alert('请先开通通道');
+            return;
+        }
+
+        const txCount = parseInt(document.getElementById('txCount').value);
+
+        const response = await fetch('/api/layer2/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tx_count: txCount })
+        });
+
+        const result = await response.json();
+
+        document.getElementById('aliceBalance').textContent = result.final_state.alice_balance.toFixed(4) + ' BTC';
+        document.getElementById('bobBalance').textContent = result.final_state.bob_balance.toFixed(4) + ' BTC';
+        document.getElementById('channelStatus').innerHTML = `⚡ 已完成 ${result.simulation.actual_off_chain_txs.toLocaleString()} 笔链下交易`;
+    }
+
+    async function compareL1L2() {
+        const txCount = parseInt(document.getElementById('txCount').value);
+
+        const response = await fetch('/api/layer2/compare', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tx_count: txCount })
+        });
+
+        const result = await response.json();
+
+        document.getElementById('comparisonResult').innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div class="result-box" style="border-left: 4px solid #ef4444;">
+                <div class="result-label" style="color: #ef4444;">Layer 1 (全部上链)</div>
+                <div style="font-size: 0.9rem;">
+                    <div>链上交易: <strong>${result.layer1.on_chain_txs.toLocaleString()}</strong></div>
+                    <div>Gas 费用: <strong>$${result.layer1.total_gas_usd.toLocaleString()}</strong></div>
+                    <div>总时间: <strong>${result.layer1.total_time_hours} 小时</strong></div>
+                </div>
+            </div>
+            <div class="result-box" style="border-left: 4px solid #10b981;">
+                <div class="result-label" style="color: #10b981;">Layer 2 (支付通道)</div>
+                <div style="font-size: 0.9rem;">
+                    <div>链上交易: <strong>${result.layer2.on_chain_txs}</strong></div>
+                    <div>链下交易: <strong>${result.layer2.off_chain_txs.toLocaleString()}</strong></div>
+                    <div>Gas 费用: <strong>$${result.layer2.total_gas_usd}</strong></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="message success">
+            💰 <strong>节省 ${result.savings.gas_saved_percent}</strong> Gas 费用<br>
+            ⏱️ 节省 <strong>${result.savings.time_saved_hours} 小时</strong>
+        </div>
+        
+        <p style="font-size: 0.9rem; margin-top: 1rem; color: var(--text-secondary);">
+            ${result.conclusion}
+        </p>
+    `;
+    }
+</script>
+{% endblock %}

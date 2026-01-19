@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}DApp 活跃度分析 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🔍 DApp 活跃度分析仪</h1>
+    <p class="page-subtitle">识别"空城计"项目 — Gensler 教授的投资警示</p>
+</div>
+
+<div class="tool-layout">
+    <!-- 左侧：DApp 列表 -->
+    <div class="panel">
+        <h3 class="panel-title">📊 DApp 健康度排名</h3>
+
+        <div class="message warning" style="margin-bottom: 1rem;">
+            ⚠️ Gensler 警告: "最活跃的 DApp 日活仅 1500 人，但市值却高达数十亿美元"
+        </div>
+
+        <div id="dappList">
+            <!-- 动态加载 -->
+        </div>
+    </div>
+
+    <!-- 右侧：详细分析 -->
+    <div class="panel">
+        <h3 class="panel-title">📈 详细分析</h3>
+
+        <div id="dappDetail">
+            <div class="message info">点击左侧 DApp 查看详细分析</div>
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+            <h4 style="margin-bottom: 1rem;">🚩 危险信号</h4>
+            <div id="redFlags" style="font-size: 0.9rem;">
+                <div
+                    style="padding: 0.5rem; border-left: 3px solid var(--danger); margin-bottom: 0.5rem; background: var(--bg-subtle);">
+                    代币频繁交易但合约几乎无调用
+                </div>
+                <div
+                    style="padding: 0.5rem; border-left: 3px solid var(--danger); margin-bottom: 0.5rem; background: var(--bg-subtle);">
+                    高市值但社区讨论冷清
+                </div>
+                <div
+                    style="padding: 0.5rem; border-left: 3px solid var(--danger); margin-bottom: 0.5rem; background: var(--bg-subtle);">
+                    团队匿名且无法验证技术能力
+                </div>
+                <div style="padding: 0.5rem; border-left: 3px solid var(--danger); background: var(--bg-subtle);">
+                    白皮书充斥 buzzwords 但无具体实现
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+            <h4 style="margin-bottom: 0.5rem;">💡 关键指标</h4>
+            <table style="width: 100%; font-size: 0.85rem;">
+                <tr>
+                    <td><strong>市值/日活用户</strong></td>
+                    <td style="color: var(--success);">健康: < $50,000</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td style="color: var(--danger);">警告: > $500,000</td>
+                </tr>
+                <tr>
+                    <td><strong>合约调用率</strong></td>
+                    <td style="color: var(--success);">健康: > 1.0</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td style="color: var(--danger);">警告: < 0.1</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadDApps() {
+        const response = await fetch('/api/dapp/list');
+        const dapps = await response.json();
+
+        const listDiv = document.getElementById('dappList');
+        listDiv.innerHTML = '';
+
+        dapps.forEach(dapp => {
+            const item = document.createElement('div');
+            item.style.cssText = 'padding: 1rem; border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 0.75rem; cursor: pointer; transition: all 0.2s;';
+            item.onmouseover = () => item.style.borderColor = 'var(--primary)';
+            item.onmouseout = () => item.style.borderColor = 'var(--border-subtle)';
+            item.onclick = () => analyzeDApp(dapp.name);
+
+            item.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: bold;">${dapp.name}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">${dapp.category}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 1.2rem;">${dapp.risk_level}</div>
+                    <div style="font-size: 0.8rem;">评分: ${dapp.score}</div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+                <span>日活: ${dapp.daily_users.toLocaleString()}</span>
+                <span>市值: ${dapp.market_cap}</span>
+            </div>
+        `;
+
+            listDiv.appendChild(item);
+        });
+    }
+
+    async function analyzeDApp(name) {
+        const response = await fetch(`/api/dapp/analyze?name=${encodeURIComponent(name)}`);
+        const result = await response.json();
+
+        if (!result.found) {
+            document.getElementById('dappDetail').innerHTML = `<div class="message error">${result.error}</div>`;
+            return;
+        }
+
+        const analysis = result.analysis;
+        const raw = result.raw_data;
+
+        let html = `
+        <div class="result-box" style="margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <div style="font-size: 1.2rem; font-weight: bold;">${raw.name}</div>
+                    <div style="color: var(--text-muted);">${raw.category}</div>
+                </div>
+                <div style="text-align: center; padding: 0.5rem 1rem; background: var(--bg-surface); border-radius: 8px;">
+                    <div style="font-size: 2rem;">${analysis.score}</div>
+                    <div style="font-size: 0.8rem;">${analysis.risk_level}</div>
+                </div>
+            </div>
+            
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">${raw.description}</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+                <div style="padding: 0.5rem; background: var(--bg-surface); border-radius: 4px;">
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">市值</div>
+                    <div style="font-weight: bold;">${analysis.metrics.market_cap}</div>
+                </div>
+                <div style="padding: 0.5rem; background: var(--bg-surface); border-radius: 4px;">
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">日活用户</div>
+                    <div style="font-weight: bold;">${analysis.metrics.daily_users}</div>
+                </div>
+                <div style="padding: 0.5rem; background: var(--bg-surface); border-radius: 4px;">
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">市值/用户</div>
+                    <div style="font-weight: bold;">${analysis.metrics.cap_per_user}</div>
+                </div>
+                <div style="padding: 0.5rem; background: var(--bg-surface); border-radius: 4px;">
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">合约使用率</div>
+                    <div style="font-weight: bold;">${analysis.metrics.contract_usage_ratio}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="font-size: 0.9rem; color: var(--text-secondary);">
+            ${analysis.risk_description}
+        </div>
+    `;
+
+        if (analysis.warnings && analysis.warnings.length > 0) {
+            html += `<div style="margin-top: 1rem;">`;
+            analysis.warnings.forEach(w => {
+                html += `<div class="message warning" style="margin-bottom: 0.5rem;">${w}</div>`;
+            });
+            html += `</div>`;
+        }
+
+        document.getElementById('dappDetail').innerHTML = html;
+    }
+
+    loadDApps();
+</script>
+{% endblock %}

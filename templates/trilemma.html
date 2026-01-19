@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}不可能三角模拟器 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🔺 不可能三角模拟器</h1>
+    <p class="page-subtitle">探索去中心化、安全性和扩展性之间的权衡 — Vitalik 的区块链三难困境</p>
+</div>
+
+<div class="tool-layout">
+    <!-- 左侧：参数调节 -->
+    <div class="panel">
+        <h3 class="panel-title">⚙️ 参数调节</h3>
+
+        <div class="input-group">
+            <label class="input-label">区块大小 (KB): <span id="blockSizeValue">1000</span></label>
+            <input type="range" id="blockSize" class="input-field" min="100" max="32000" value="1000" step="100"
+                oninput="updateValue('blockSize')">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                <span>100 KB</span>
+                <span>32 MB</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">出块时间 (秒): <span id="blockTimeValue">600</span></label>
+            <input type="range" id="blockTime" class="input-field" min="1" max="1200" value="600" step="1"
+                oninput="updateValue('blockTime')">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                <span>1秒</span>
+                <span>20分钟</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">全节点数量: <span id="nodeCountValue">10000</span></label>
+            <input type="range" id="nodeCount" class="input-field" min="10" max="50000" value="10000" step="10"
+                oninput="updateValue('nodeCount')">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                <span>10</span>
+                <span>50,000</span>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="simulate()" style="width: 100%;">
+            🔄 模拟计算
+        </button>
+
+        <div id="tradeOffWarning" style="margin-top: 1rem;"></div>
+    </div>
+
+    <!-- 右侧：结果 -->
+    <div class="panel">
+        <h3 class="panel-title">📊 模拟结果</h3>
+
+        <div id="results">
+            <div class="message info">调整左侧参数，点击"模拟计算"查看结果</div>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+            <h4 style="margin-bottom: 0.5rem;">💡 不可能三角</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">
+                区块链很难同时实现：<br>
+                <strong>去中心化</strong>：任何人都能运行节点<br>
+                <strong>安全性</strong>：抵抗攻击和分叉<br>
+                <strong>扩展性</strong>：处理大量交易
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateValue(id) {
+        const value = document.getElementById(id).value;
+        document.getElementById(id + 'Value').textContent = parseInt(value).toLocaleString();
+    }
+
+    async function simulate() {
+        const blockSize = parseInt(document.getElementById('blockSize').value);
+        const blockTime = parseInt(document.getElementById('blockTime').value);
+        const nodeCount = parseInt(document.getElementById('nodeCount').value);
+
+        const response = await fetch('/api/trilemma/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                block_size_kb: blockSize,
+                block_time_seconds: blockTime,
+                node_count: nodeCount
+            })
+        });
+
+        const result = await response.json();
+
+        // 显示结果
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="text-align: center; padding: 1rem; background: var(--bg-surface); border-radius: 8px; border-left: 4px solid #10b981;">
+                <div style="font-size: 0.8rem; color: var(--text-muted);">扩展性</div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: #10b981;">${result.scalability.tps} TPS</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Visa 的 ${result.scalability.visa_comparison}</div>
+            </div>
+            <div style="text-align: center; padding: 1rem; background: var(--bg-surface); border-radius: 8px; border-left: 4px solid #3b82f6;">
+                <div style="font-size: 0.8rem; color: var(--text-muted);">去中心化</div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: #3b82f6;">${result.decentralization.score}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">${result.decentralization.node_count.toLocaleString()} 节点</div>
+            </div>
+            <div style="text-align: center; padding: 1rem; background: var(--bg-surface); border-radius: 8px; border-left: 4px solid #ef4444;">
+                <div style="font-size: 0.8rem; color: var(--text-muted);">安全性</div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: #ef4444;">${result.security.score}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">孤块率 ${result.security.orphan_probability}</div>
+            </div>
+        </div>
+        
+        <div class="result-box">
+            <div class="result-label">技术细节</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem;">
+                <div>每区块交易: ${result.scalability.txs_per_block.toLocaleString()}</div>
+                <div>带宽需求: ${result.decentralization.bandwidth_required_mbps} Mbps</div>
+                <div>年存储: ${result.decentralization.storage_per_year_gb} GB</div>
+                <div>传播延迟: ${result.security.propagation_time_ms} ms</div>
+            </div>
+        </div>
+    `;
+
+        // 显示警告
+        const warningDiv = document.getElementById('tradeOffWarning');
+        const isWarning = result.trade_off_warning.includes('⚠️');
+        warningDiv.innerHTML = `<div class="message ${isWarning ? 'warning' : 'success'}">${result.trade_off_warning}</div>`;
+    }
+</script>
+{% endblock %}

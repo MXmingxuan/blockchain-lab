@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}零知识证明演示 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🔐 零知识证明演示</h1>
+    <p class="page-subtitle">证明"我知道秘密"而不泄露秘密 — 酒吧年龄验证场景</p>
+</div>
+
+<div class="tool-layout">
+    <!-- 左侧：交互式证明 -->
+    <div class="panel">
+        <h3 class="panel-title">🍺 酒吧年龄验证</h3>
+
+        <div class="result-box" style="margin-bottom: 1rem;">
+            <div style="font-size: 0.9rem; font-style: italic;">
+                "我想进酒吧喝酒，但我不想出示身份证给陌生人看我的生日、住址等隐私信息。
+                我只需要证明<strong>我已满21岁</strong>这一个事实。"
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">你的出生年份（秘密）</label>
+            <input type="number" id="birthYear" class="input-field" value="1995" min="1950" max="2010">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">这是你要保护的隐私信息</div>
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">年龄门槛</label>
+            <input type="number" id="threshold" class="input-field" value="21" min="18" max="65">
+        </div>
+
+        <button class="btn btn-primary" onclick="generateProof()" style="width: 100%;">
+            🔮 生成零知识证明
+        </button>
+
+        <div id="proofResult" style="margin-top: 1.5rem;"></div>
+    </div>
+
+    <!-- 右侧：验证步骤 -->
+    <div class="panel">
+        <h3 class="panel-title">📋 验证流程</h3>
+
+        <div id="verificationSteps">
+            <div class="message info">点击"生成零知识证明"查看完整验证流程</div>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+            <h4 style="margin-bottom: 0.5rem;">💡 ZKP 核心属性</h4>
+            <ul style="font-size: 0.9rem; color: var(--text-secondary); padding-left: 1.2rem;">
+                <li><strong>完备性</strong>：诚实的证明者能说服验证者</li>
+                <li><strong>可靠性</strong>：骗子无法欺骗验证者</li>
+                <li><strong>零知识</strong>：验证者只知道"结论"，不知道"秘密"</li>
+            </ul>
+        </div>
+
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+            <h4 style="margin-bottom: 0.5rem;">🌐 现实应用</h4>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                <div>• <strong>Zcash</strong>: 隐私交易</div>
+                <div>• <strong>身份验证</strong>: 证明资质不泄露信息</div>
+                <div>• <strong>投票</strong>: 匿名但可验证</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function generateProof() {
+        const birthYear = parseInt(document.getElementById('birthYear').value);
+        const threshold = parseInt(document.getElementById('threshold').value);
+
+        const response = await fetch('/api/zkp/prove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ birth_year: birthYear, threshold: threshold })
+        });
+
+        const result = await response.json();
+
+        // 显示证明结果
+        const proofDiv = document.getElementById('proofResult');
+        const passed = result.result.claim_verified;
+
+        proofDiv.innerHTML = `
+        <div class="result-box">
+            <div class="result-label">承诺 (Commitment)</div>
+            <div style="font-family: monospace; font-size: 0.8rem; word-break: break-all;">
+                ${result.commitment}
+            </div>
+        </div>
+        
+        <div class="message ${passed ? 'success' : 'warning'}" style="margin-top: 1rem;">
+            ${result.result.message}
+        </div>
+    `;
+
+        // 显示验证步骤
+        const stepsDiv = document.getElementById('verificationSteps');
+        let stepsHtml = '';
+
+        result.verification_steps.forEach(step => {
+            stepsHtml += `
+            <div class="result-box" style="margin-bottom: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <span style="background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">
+                        ${step.step}
+                    </span>
+                    <strong>${step.action}</strong>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-left: 32px;">
+                    ${step.detail}
+                </div>
+                <div style="font-size: 0.8rem; margin-left: 32px; margin-top: 0.25rem;">
+                    <span style="color: var(--success);">Prover: ${step.prover_reveals}</span><br>
+                    <span style="color: var(--primary);">Verifier: ${step.verifier_learns}</span>
+                </div>
+            </div>
+        `;
+        });
+
+        stepsDiv.innerHTML = stepsHtml;
+    }
+</script>
+{% endblock %}

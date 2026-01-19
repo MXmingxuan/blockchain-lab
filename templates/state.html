@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}状态模型对比 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">⚖️ UTXO vs 账户模型</h1>
+    <p class="page-subtitle">对比比特币与以太坊的状态管理方式，理解 Gas 机制存在的意义</p>
+</div>
+
+<div class="tool-layout">
+    <!-- 左侧：模型对比 -->
+    <div class="panel">
+        <h3 class="panel-title">📊 状态模型对比</h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="padding: 1rem; background: #fff7ed; border-left: 4px solid #ea580c; border-radius: 4px;">
+                <div style="font-weight: bold; color: #ea580c;">🔶 Bitcoin (UTXO)</div>
+                <ul style="font-size: 0.85rem; margin-top: 0.5rem; padding-left: 1rem;">
+                    <li>没有"账户"概念</li>
+                    <li>交易消费旧UTXO</li>
+                    <li>生成新UTXO</li>
+                </ul>
+            </div>
+            <div style="padding: 1rem; background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 4px;">
+                <div style="font-weight: bold; color: #2563eb;">🔷 Ethereum (Account)</div>
+                <ul style="font-size: 0.85rem; margin-top: 0.5rem; padding-left: 1rem;">
+                    <li>维护账户余额</li>
+                    <li>直接修改余额</li>
+                    <li>支持智能合约状态</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">发送者</label>
+            <input type="text" id="sender" class="input-field" value="Alice">
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">接收者</label>
+            <input type="text" id="receiver" class="input-field" value="Bob">
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">金额</label>
+            <input type="number" id="amount" class="input-field" value="3" step="0.1">
+        </div>
+
+        <button class="btn btn-primary" onclick="executeTransfer()" style="width: 100%;">
+            🔄 执行转账
+        </button>
+
+        <div id="transferResult" style="margin-top: 1.5rem;">
+            <!-- 转账结果 -->
+        </div>
+    </div>
+
+    <!-- 右侧：Gas 模拟 -->
+    <div class="panel">
+        <h3 class="panel-title">⛽ Gas 机制演示</h3>
+
+        <div class="result-box" style="margin-bottom: 1rem;">
+            <div class="result-label">为什么需要 Gas？</div>
+            <div style="font-size: 0.95rem;">
+                以太坊是<strong>图灵完备</strong>的，可以运行任意代码（包括死循环）。<br>
+                Gas 确保每个操作都有成本，防止无限循环导致网络瘫痪。
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">Gas 限制</label>
+            <input type="number" id="gasLimit" class="input-field" value="50" min="1" max="1000">
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">循环次数（尝试执行）</label>
+            <input type="number" id="loopCount" class="input-field" value="100" min="1">
+        </div>
+
+        <button class="btn btn-secondary" onclick="simulateGas()" style="width: 100%;">
+            ⚡ 模拟执行
+        </button>
+
+        <div id="gasResult" style="margin-top: 1.5rem;">
+            <!-- Gas 模拟结果 -->
+        </div>
+
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+            <h4 style="margin-bottom: 0.5rem;">💡 操作 Gas 消耗参考</h4>
+            <table style="width: 100%; font-size: 0.85rem;">
+                <tr>
+                    <td>ADD (加法)</td>
+                    <td style="text-align: right;">3 Gas</td>
+                </tr>
+                <tr>
+                    <td>SSTORE (存储写入)</td>
+                    <td style="text-align: right;">20,000 Gas</td>
+                </tr>
+                <tr>
+                    <td>CALL (外部调用)</td>
+                    <td style="text-align: right;">2,300 Gas</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function executeTransfer() {
+        const sender = document.getElementById('sender').value;
+        const receiver = document.getElementById('receiver').value;
+        const amount = parseFloat(document.getElementById('amount').value);
+
+        const response = await fetch('/api/state/transfer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sender, receiver, amount })
+        });
+
+        const result = await response.json();
+
+        const resultDiv = document.getElementById('transferResult');
+
+        let html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">';
+
+        // UTXO 模型结果
+        html += `
+        <div class="result-box">
+            <div class="result-label">🔶 UTXO 模型</div>
+            ${result.utxo.history.map(h => `
+                <div style="font-size: 0.85rem; margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-surface); border-radius: 4px;">
+                    <strong>${h.action}</strong><br>
+                    ${h.state_change}
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+        // 账户模型结果
+        html += `
+        <div class="result-box">
+            <div class="result-label">🔷 账户模型</div>
+            ${result.account.history.map(h => `
+                <div style="font-size: 0.85rem; margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-surface); border-radius: 4px;">
+                    <strong>${h.action}</strong><br>
+                    ${h.state_change}
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+        html += '</div>';
+        resultDiv.innerHTML = html;
+    }
+
+    async function simulateGas() {
+        const gasLimit = parseInt(document.getElementById('gasLimit').value);
+        const loopCount = parseInt(document.getElementById('loopCount').value);
+
+        const response = await fetch('/api/state/gas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gas_limit: gasLimit, iterations: loopCount })
+        });
+
+        const result = await response.json();
+
+        const resultDiv = document.getElementById('gasResult');
+
+        const stoppedByGas = result.stopped_reason === 'OUT_OF_GAS';
+
+        resultDiv.innerHTML = `
+        <div class="result-box">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align: center; margin-bottom: 1rem;">
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">请求迭代</div>
+                    <div style="font-size: 1.5rem; font-weight: bold;">${result.requested_iterations}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">实际执行</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: ${stoppedByGas ? 'var(--danger)' : 'var(--success)'};">${result.actual_iterations}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Gas 消耗</div>
+                    <div style="font-size: 1.5rem; font-weight: bold;">${result.gas_used}/${result.gas_limit}</div>
+                </div>
+            </div>
+            <div class="message ${stoppedByGas ? 'warning' : 'success'}">
+                ${stoppedByGas
+                ? '⛽ 因 Gas 耗尽而停止 — 这就是为什么死循环不会让以太坊崩溃！'
+                : '✅ 成功完成所有迭代'}
+            </div>
+        </div>
+    `;
+    }
+</script>
+{% endblock %}

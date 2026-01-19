@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}智能合约售货机 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🎰 智能合约售货机</h1>
+    <p class="page-subtitle">体验"履约换履约"的智能合约本质 — Larry Lessig 的自动售货机比喻</p>
+</div>
+
+<div class="tool-layout">
+    <!-- 左侧：售货机界面 -->
+    <div class="panel">
+        <h3 class="panel-title">🏭 自动售货机</h3>
+
+        <div id="machineStatus" style="margin-bottom: 1.5rem;">
+            <div
+                style="display: flex; justify-content: space-between; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">合约余额</div>
+                    <div id="contractBalance" style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">0.000
+                        ETH</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">交易次数</div>
+                    <div id="txCount" style="font-size: 1.5rem; font-weight: bold;">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="products"
+            style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+            <!-- 商品将通过 JS 动态加载 -->
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">投入金额 (ETH)</label>
+            <input type="number" id="depositAmount" class="input-field" step="0.0001" value="0.002" min="0">
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">选择商品</label>
+            <select id="selectedProduct" class="input-field">
+                <!-- 动态加载 -->
+            </select>
+        </div>
+
+        <button class="btn btn-primary" onclick="purchaseProduct()" style="width: 100%;">
+            🪙 投币购买
+        </button>
+    </div>
+
+    <!-- 右侧：交易日志 -->
+    <div class="panel">
+        <h3 class="panel-title">📜 交易日志</h3>
+
+        <div id="transactionLog" style="max-height: 400px; overflow-y: auto;">
+            <div class="message info">
+                点击"投币购买"开始体验智能合约的执行过程
+            </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+            <h4 style="margin-bottom: 0.5rem;">💡 核心概念</h4>
+            <ul style="font-size: 0.9rem; color: var(--text-secondary); padding-left: 1.2rem;">
+                <li><strong>状态变量</strong>: balance, inventory</li>
+                <li><strong>条件检查</strong>: 金额足够? 库存充足?</li>
+                <li><strong>Revert</strong>: 条件不满足时回滚</li>
+                <li><strong>原子性</strong>: 要么全部成功，要么全部失败</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    let machineState = null;
+
+    async function loadMachine() {
+        const response = await fetch('/api/vending/status');
+        const data = await response.json();
+        machineState = data.machine;
+
+        // 更新余额
+        document.getElementById('contractBalance').textContent = machineState.balance.toFixed(6) + ' ETH';
+        document.getElementById('txCount').textContent = machineState.transaction_count;
+
+        // 渲染商品
+        const productsDiv = document.getElementById('products');
+        const select = document.getElementById('selectedProduct');
+        productsDiv.innerHTML = '';
+        select.innerHTML = '';
+
+        for (const [id, product] of Object.entries(machineState.products)) {
+            // 商品卡片
+            productsDiv.innerHTML += `
+            <div style="padding: 1rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px; text-align: center;">
+                <div style="font-size: 2rem;">${product.emoji}</div>
+                <div style="font-weight: bold;">${product.name}</div>
+                <div style="color: var(--primary);">${product.price} ETH</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">库存: ${product.stock}</div>
+            </div>
+        `;
+
+            // 下拉选项
+            select.innerHTML += `<option value="${id}">${product.emoji} ${product.name} (${product.price} ETH)</option>`;
+        }
+    }
+
+    async function purchaseProduct() {
+        const productId = document.getElementById('selectedProduct').value;
+        const amount = parseFloat(document.getElementById('depositAmount').value);
+
+        const response = await fetch('/api/vending/purchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ product_id: productId, amount: amount })
+        });
+
+        const result = await response.json();
+
+        // 添加到日志
+        const logDiv = document.getElementById('transactionLog');
+        const tx = result.transaction;
+
+        const logEntry = document.createElement('div');
+        logEntry.className = 'result-box';
+        logEntry.innerHTML = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-weight: bold;">${tx.result}</span>
+            <span style="color: var(--text-muted); font-size: 0.8rem;">${tx.timestamp}</span>
+        </div>
+        <div style="font-size: 0.9rem;">${tx.details}</div>
+    `;
+
+        logDiv.innerHTML = '';
+        logDiv.prepend(logEntry);
+
+        // 刷新状态
+        loadMachine();
+    }
+
+    // 页面加载时初始化
+    loadMachine();
+</script>
+{% endblock %}

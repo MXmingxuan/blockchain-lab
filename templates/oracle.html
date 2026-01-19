@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}预言机演示 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🔮 预言机演示</h1>
+    <p class="page-subtitle">体验外部数据如何触发智能合约自动执行 — 航班延误保险案例</p>
+</div>
+
+<div class="tool-layout">
+    <!-- 左侧：航班查询与保险 -->
+    <div class="panel">
+        <h3 class="panel-title">✈️ 航班延误保险</h3>
+
+        <div class="input-group">
+            <label class="input-label">选择航班</label>
+            <select id="flightSelect" class="input-field" onchange="checkFlight()">
+                <option value="">-- 选择航班 --</option>
+            </select>
+        </div>
+
+        <div id="flightInfo"
+            style="padding: 1rem; background: var(--bg-subtle); border-radius: 8px; margin-bottom: 1.5rem; display: none;">
+            <!-- 航班信息 -->
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">保单 ID</label>
+            <input type="text" id="policyId" class="input-field" value="POL001" placeholder="输入保单ID">
+        </div>
+
+        <div class="btn-group" style="margin-bottom: 1.5rem;">
+            <button class="btn btn-primary" onclick="purchaseInsurance()">📝 购买保险</button>
+            <button class="btn btn-secondary" onclick="claimInsurance()">💰 申请理赔</button>
+        </div>
+
+        <div id="claimResult" style="display: none;">
+            <!-- 理赔结果 -->
+        </div>
+    </div>
+
+    <!-- 右侧：预言机概念 -->
+    <div class="panel">
+        <h3 class="panel-title">🧠 什么是预言机？</h3>
+
+        <div class="result-box" style="margin-bottom: 1rem;">
+            <div class="result-label">核心问题</div>
+            <div style="font-size: 0.95rem;">
+                区块链是<strong>封闭系统</strong>，无法直接获取外部数据。<br>
+                如何知道"航班延误了60分钟"这个现实世界的事实？
+            </div>
+        </div>
+
+        <div class="result-box" style="margin-bottom: 1rem;">
+            <div class="result-label">解决方案</div>
+            <div style="font-size: 0.95rem;">
+                <strong>预言机 (Oracle)</strong>: 连接区块链与现实世界的桥梁
+            </div>
+        </div>
+
+        <div id="executionSteps" style="margin-top: 1.5rem;">
+            <h4 style="margin-bottom: 1rem;">📋 执行流程</h4>
+            <div id="stepsContainer">
+                <div class="message info">选择航班并购买保险，体验预言机工作流程</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-subtle); border-radius: 8px;">
+            <h4 style="margin-bottom: 0.5rem;">💡 投资价值</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">
+                理解预言机的价值后，可以评估 <strong>Chainlink</strong> 等解决数据上链问题的项目。
+                没有可信数据，智能合约无法执行现实世界的逻辑。
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadFlights() {
+        const response = await fetch('/api/oracle/flights');
+        const flights = await response.json();
+
+        const select = document.getElementById('flightSelect');
+        flights.forEach(f => {
+            if (f.found) {
+                select.innerHTML += `<option value="${f.flight_number}">${f.status_emoji} ${f.flight_number}: ${f.route} (延误 ${f.delay_minutes} 分钟)</option>`;
+            }
+        });
+    }
+
+    async function checkFlight() {
+        const flightNumber = document.getElementById('flightSelect').value;
+        if (!flightNumber) return;
+
+        const response = await fetch(`/api/oracle/check?flight=${flightNumber}`);
+        const data = await response.json();
+
+        const infoDiv = document.getElementById('flightInfo');
+        infoDiv.style.display = 'block';
+        infoDiv.innerHTML = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-weight: bold;">${data.status_emoji} ${data.flight_number}</span>
+            <span style="color: var(--text-muted);">${data.route}</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.9rem;">
+            <div>计划: ${data.scheduled}</div>
+            <div>实际: ${data.actual}</div>
+            <div>状态: ${data.status}</div>
+            <div style="color: ${data.delay_minutes >= 60 ? 'var(--danger)' : 'var(--success)'};">
+                延误: ${data.delay_minutes} 分钟
+            </div>
+        </div>
+    `;
+    }
+
+    async function purchaseInsurance() {
+        const flightNumber = document.getElementById('flightSelect').value;
+        const policyId = document.getElementById('policyId').value;
+
+        if (!flightNumber || !policyId) {
+            alert('请选择航班并输入保单ID');
+            return;
+        }
+
+        const response = await fetch('/api/oracle/purchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ flight: flightNumber, policy_id: policyId })
+        });
+
+        const result = await response.json();
+
+        const stepsDiv = document.getElementById('stepsContainer');
+        if (result.success) {
+            stepsDiv.innerHTML = `<div class="message success">✅ ${result.message}</div>`;
+        } else {
+            stepsDiv.innerHTML = `<div class="message error">❌ ${result.error}: ${result.message}</div>`;
+        }
+    }
+
+    async function claimInsurance() {
+        const policyId = document.getElementById('policyId').value;
+
+        const response = await fetch('/api/oracle/claim', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ policy_id: policyId })
+        });
+
+        const result = await response.json();
+
+        const stepsDiv = document.getElementById('stepsContainer');
+
+        if (result.steps) {
+            let stepsHtml = '';
+            result.steps.forEach(step => {
+                stepsHtml += `
+                <div class="result-box" style="margin-bottom: 0.5rem;">
+                    <strong>步骤 ${step.step}:</strong> ${step.action}<br>
+                    <span style="color: var(--text-secondary);">${step.detail}</span>
+                </div>
+            `;
+            });
+
+            stepsHtml += `
+            <div class="message ${result.claimed ? 'success' : 'info'}" style="margin-top: 1rem;">
+                ${result.message}
+            </div>
+        `;
+
+            stepsDiv.innerHTML = stepsHtml;
+        } else {
+            stepsDiv.innerHTML = `<div class="message error">❌ ${result.error}: ${result.message}</div>`;
+        }
+    }
+
+    loadFlights();
+</script>
+{% endblock %}

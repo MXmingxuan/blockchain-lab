@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Coinbase 解码器 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">📝 Coinbase 秘密信息解码器</h1>
+    <p class="page-subtitle">解码矿工在区块中留下的消息 - 链上的"涂鸦墙"</p>
+</div>
+
+<div class="tool-layout">
+    <div class="panel">
+        <h2 class="panel-title">🏛️ 创世区块</h2>
+
+        <div id="genesisBlock">
+            <div class="message">加载中...</div>
+        </div>
+
+        <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+
+        <h3 class="panel-title" style="margin-top: 0;">🔍 查询区块</h3>
+
+        <div class="input-group">
+            <label class="input-label">区块高度</label>
+            <input type="number" id="blockHeight" class="input-field" value="630000" min="0">
+        </div>
+
+        <button class="btn btn-primary" onclick="decodeBlock()" style="width: 100%;">
+            🔍 解码 Coinbase
+        </button>
+
+        <div id="decodeResult" style="margin-top: 1rem;"></div>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">📜 历史著名消息</h2>
+
+        <div id="famousMessages">
+            <div class="message">加载中...</div>
+        </div>
+
+        <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+
+        <div class="message info">
+            <strong>💡 Coinbase 交易的特殊性</strong>
+            <ul style="margin-top: 0.5rem; color: var(--text-secondary); padding-left: 1.5rem;">
+                <li>每个区块的第一笔交易是 Coinbase 交易</li>
+                <li>它没有输入（凭空创造新币）</li>
+                <li>矿工可以在 ScriptSig 中写入最多 100 字节数据</li>
+                <li>这些数据永久记录在区块链上</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadGenesisBlock() {
+        try {
+            const response = await fetch('/api/coinbase/genesis');
+            const data = await response.json();
+
+            document.getElementById('genesisBlock').innerHTML = `
+            <div class="result-box" style="border-left: 4px solid var(--accent-purple);">
+                <div class="result-label">区块 #0 - 创世区块</div>
+                <div style="font-size: 1.1rem; margin: 0.5rem 0; font-style: italic; color: var(--accent-blue);">
+                    "${data.decoded_message}"
+                </div>
+                <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                    ${data.significance}
+                </div>
+                <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                    ${data.historical_context}
+                </div>
+            </div>`;
+        } catch (error) {
+            document.getElementById('genesisBlock').innerHTML =
+                `<div class="message error">加载失败</div>`;
+        }
+    }
+
+    async function loadFamousMessages() {
+        try {
+            const response = await fetch('/api/coinbase/famous');
+            const data = await response.json();
+
+            let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+
+            data.forEach(msg => {
+                html += `
+                <div class="result-box" style="padding: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <div style="font-weight: bold;">${msg.name}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">区块 #${msg.block_height.toLocaleString()}</div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">${msg.date}</div>
+                    </div>
+                    <div style="margin-top: 0.5rem; font-style: italic; color: var(--accent-blue); font-size: 0.9rem;">
+                        "${msg.message.substring(0, 60)}${msg.message.length > 60 ? '...' : ''}"
+                    </div>
+                    <div style="margin-top: 0.25rem; font-size: 0.85rem; color: var(--text-secondary);">
+                        ${msg.significance}
+                    </div>
+                </div>`;
+            });
+
+            html += '</div>';
+            document.getElementById('famousMessages').innerHTML = html;
+        } catch (error) {
+            document.getElementById('famousMessages').innerHTML =
+                `<div class="message error">加载失败</div>`;
+        }
+    }
+
+    async function decodeBlock() {
+        const height = parseInt(document.getElementById('blockHeight').value);
+
+        document.getElementById('decodeResult').innerHTML =
+            '<div class="message">正在解码...</div>';
+
+        try {
+            const response = await fetch('/api/coinbase/decode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ height })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                document.getElementById('decodeResult').innerHTML = `
+                <div class="result-box">
+                    <div class="result-label">区块 #${data.block_height.toLocaleString()}</div>
+                    <div style="margin-top: 0.5rem;">
+                        <div style="color: var(--text-muted); font-size: 0.85rem;">矿池: ${data.miner}</div>
+                        <div style="margin-top: 0.5rem; font-style: italic; color: var(--accent-blue);">
+                            "${data.decoded_message || '(无可读消息)'}"
+                        </div>
+                    </div>
+                </div>`;
+            } else {
+                document.getElementById('decodeResult').innerHTML =
+                    `<div class="message error">${data.error}</div>`;
+            }
+        } catch (error) {
+            document.getElementById('decodeResult').innerHTML =
+                `<div class="message error">解码失败: ${error.message}</div>`;
+        }
+    }
+
+    // 页面加载时
+    loadGenesisBlock();
+    loadFamousMessages();
+</script>
+{% endblock %}

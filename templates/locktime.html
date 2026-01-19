@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}时间锁演示 - 区块链密码学工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">⏰ 时间锁交易演示</h1>
+    <p class="page-subtitle">nLockTime 机制 - 让交易在未来才生效</p>
+</div>
+
+<div class="tool-layout">
+    <div class="panel">
+        <h2 class="panel-title">🔒 创建时间锁</h2>
+
+        <div class="input-group">
+            <label class="input-label">锁定类型</label>
+            <select id="lockType" class="input-field" onchange="updateLockLabel()">
+                <option value="blocks">区块高度锁</option>
+                <option value="time">时间戳锁</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label class="input-label" id="lockValueLabel">锁定区块数</label>
+            <input type="number" id="lockValue" class="input-field" value="100" min="1">
+        </div>
+
+        <button class="btn btn-primary" onclick="createLocktime()" style="width: 100%;">
+            🔒 生成时间锁交易
+        </button>
+
+        <div id="locktimeResult" style="margin-top: 1.5rem;"></div>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">📚 应用场景</h2>
+
+        <div id="useCases">
+            <div class="message">加载中...</div>
+        </div>
+
+        <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+
+        <div class="message info">
+            <strong>💡 nLockTime 如何工作</strong>
+            <ul style="margin-top: 0.5rem; color: var(--text-secondary); padding-left: 1.5rem;">
+                <li><strong>值 < 5亿</strong>：解释为区块高度</li>
+                <li><strong>值 ≥ 5亿</strong>：解释为 Unix 时间戳</li>
+                <li>交易在锁定期内无法被广播</li>
+                <li>sequence 必须 < 0xFFFFFFFF 才能启用</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function updateLockLabel() {
+        const type = document.getElementById('lockType').value;
+        const label = document.getElementById('lockValueLabel');
+        const input = document.getElementById('lockValue');
+
+        if (type === 'blocks') {
+            label.textContent = '锁定区块数';
+            input.value = 100;
+        } else {
+            label.textContent = '锁定小时数';
+            input.value = 24;
+        }
+    }
+
+    async function createLocktime() {
+        const lockType = document.getElementById('lockType').value;
+        const lockValue = parseInt(document.getElementById('lockValue').value);
+
+        try {
+            const response = await fetch('/api/locktime/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lock_type: lockType, lock_value: lockValue })
+            });
+            const data = await response.json();
+
+            let statusColor = data.explanation.emoji === '🔒' ? 'var(--accent-orange)' : 'var(--accent-green)';
+
+            document.getElementById('locktimeResult').innerHTML = `
+            <div class="result-box">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 1.5rem;">${data.explanation.emoji}</span>
+                    <span style="font-weight: bold; color: ${statusColor};">
+                        ${data.explanation.description}
+                    </span>
+                </div>
+                
+                <div style="margin-top: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div>
+                        <div class="result-label">当前区块</div>
+                        <div>#${data.current_block.toLocaleString()}</div>
+                    </div>
+                    <div>
+                        <div class="result-label">LockTime 值</div>
+                        <div>${data.locktime_value.toLocaleString()}</div>
+                    </div>
+                </div>
+                
+                ${data.explanation.blocks_remaining ? `
+                <div style="margin-top: 0.75rem;">
+                    <div class="result-label">剩余区块</div>
+                    <div>${data.explanation.blocks_remaining} 区块 (约 ${data.explanation.estimated_minutes} 分钟)</div>
+                </div>
+                ` : ''}
+                
+                ${data.explanation.unlock_time ? `
+                <div style="margin-top: 0.75rem;">
+                    <div class="result-label">解锁时间</div>
+                    <div>${data.explanation.unlock_time}</div>
+                </div>
+                ` : ''}
+                
+                <div style="margin-top: 1rem; padding: 0.75rem; background: var(--surface-elevated); border-radius: 8px;">
+                    <strong>广播状态:</strong> ${data.broadcast_status}
+                </div>
+            </div>
+            
+            <div class="result-box" style="margin-top: 1rem;">
+                <div class="result-label">模拟交易结构</div>
+                <pre style="font-size: 0.8rem; margin-top: 0.5rem; overflow-x: auto; color: var(--text-secondary);">${JSON.stringify(data.transaction, null, 2)}</pre>
+            </div>`;
+
+        } catch (error) {
+            document.getElementById('locktimeResult').innerHTML =
+                `<div class="message error">创建失败: ${error.message}</div>`;
+        }
+    }
+
+    async function loadUseCases() {
+        try {
+            const response = await fetch('/api/locktime/usecases');
+            const data = await response.json();
+
+            let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+
+            data.forEach(useCase => {
+                html += `
+                <div class="result-box" style="padding: 0.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.25rem;">${useCase.emoji}</span>
+                        <span style="font-weight: bold;">${useCase.name}</span>
+                    </div>
+                    <div style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+                        ${useCase.description}
+                    </div>
+                    <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                        典型周期: ${useCase.typical_period}
+                    </div>
+                </div>`;
+            });
+
+            html += '</div>';
+            document.getElementById('useCases').innerHTML = html;
+        } catch (error) {
+            document.getElementById('useCases').innerHTML =
+                `<div class="message error">加载失败</div>`;
+        }
+    }
+
+    // 页面加载时
+    loadUseCases();
+</script>
+{% endblock %}
